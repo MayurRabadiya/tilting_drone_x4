@@ -1,0 +1,115 @@
+#!/bin/sh
+#
+# @name Gazebo x500
+#
+# @type Quadrotor
+#
+
+. ${R}etc/init.d/rc.mc_defaults
+
+PX4_SIMULATOR=${PX4_SIMULATOR:=gz}
+PX4_GZ_WORLD=${PX4_GZ_WORLD:=default}
+PX4_SIM_MODEL=${PX4_SIM_MODEL:=tilting_drone_x4}
+
+param set-default SIM_GZ_EN 1
+param set-default COM_RCL_EXCEPT 2
+param set-default NAV_DLL_ACT 0
+param set-default NAV_RCL_ACT 6
+
+param set-default SENS_EN_GPSSIM 1
+param set-default SENS_EN_BAROSIM 1
+param set-default SENS_EN_MAGSIM 1
+# param set-default SENS_EN_ARSPDSIM 1
+
+param set-default CA_AIRFRAME 8    # defines which mixer implementation to use.   8--> Multirotor with Tilt
+param set-default CA_ROTOR_COUNT 4
+
+param set-default CA_ROTOR0_PX 0.13
+param set-default CA_ROTOR0_PY 0.13
+param set-default CA_ROTOR0_KM  0.05
+
+param set-default CA_ROTOR1_PX -0.13
+param set-default CA_ROTOR1_PY -0.13
+param set-default CA_ROTOR1_KM  0.05
+
+param set-default CA_ROTOR2_PX 0.13
+param set-default CA_ROTOR2_PY -0.13
+param set-default CA_ROTOR2_KM -0.05
+
+param set-default CA_ROTOR3_PX -0.13
+param set-default CA_ROTOR3_PY 0.13
+param set-default CA_ROTOR3_KM -0.05
+
+param set-default CA_ROTOR0_TILT 1
+param set-default CA_ROTOR1_TILT 2
+param set-default CA_ROTOR2_TILT 3
+param set-default CA_ROTOR3_TILT 4
+
+param set-default SIM_GZ_EC_FUNC1 101
+param set-default SIM_GZ_EC_FUNC2 102
+param set-default SIM_GZ_EC_FUNC3 103
+param set-default SIM_GZ_EC_FUNC4 104
+
+param set-default SIM_GZ_EC_MIN1 150
+param set-default SIM_GZ_EC_MIN2 150
+param set-default SIM_GZ_EC_MIN3 150
+param set-default SIM_GZ_EC_MIN4 150
+
+param set-default SIM_GZ_EC_MAX1 1000
+param set-default SIM_GZ_EC_MAX2 1000
+param set-default SIM_GZ_EC_MAX3 1000
+param set-default SIM_GZ_EC_MAX4 1000
+
+param set-default CA_SV_CS_COUNT 4
+
+param set-default SIM_GZ_SV_FUNC1 201
+param set-default SIM_GZ_SV_FUNC2 202
+param set-default SIM_GZ_SV_FUNC3 203
+param set-default SIM_GZ_SV_FUNC4 204
+
+# param set-default PWM_MAIN_FUNC1 201
+# param set-default PWM_MAIN_FUNC2 202
+# param set-default PWM_MAIN_FUNC3 203
+# param set-default PWM_MAIN_FUNC4 204
+
+param set-default SIM_GZ_SV_MIN1 0     #  Minimum output value (when not disarmed).
+param set-default SIM_GZ_SV_MIN2 0
+param set-default SIM_GZ_SV_MIN3 0
+param set-default SIM_GZ_SV_MIN4 0
+
+param set-default SIM_GZ_SV_MAX1 1000
+param set-default SIM_GZ_SV_MAX2 1000
+param set-default SIM_GZ_SV_MAX3 1000
+param set-default SIM_GZ_SV_MAX4 1000
+
+param set-default SIM_GZ_SV_DIS1 500
+param set-default SIM_GZ_SV_DIS2 500
+param set-default SIM_GZ_SV_DIS3 500
+param set-default SIM_GZ_SV_DIS4 500
+
+param set-default CA_SV_TL0_MAXA 90
+param set-default CA_SV_TL0_MINA -90
+param set-default CA_SV_TL1_MAXA 90
+param set-default CA_SV_TL1_MINA -90
+param set-default CA_SV_TL2_MAXA 90
+param set-default CA_SV_TL2_MINA -90
+param set-default CA_SV_TL3_MAXA 90
+param set-default CA_SV_TL3_MINA -90
+
+param set-default CA_SV_TL0_TD 0     # Tilt Servo 2 Tilt Direction
+param set-default CA_SV_TL1_TD 0     # 0: Towards Front
+param set-default CA_SV_TL2_TD 0
+param set-default CA_SV_TL3_TD 0
+
+param set-default CA_SV_TL0_CT 3     #  Define if this servo is used for additional control.
+param set-default CA_SV_TL1_CT 3     #  3: Yaw and Pitch
+param set-default CA_SV_TL2_CT 3
+param set-default CA_SV_TL3_CT 3
+
+
+# param set-default MPC_THR_HOVER 0.60
+
+# disable attitude failure detection
+param set-default FD_FAIL_P 0
+param set-default FD_FAIL_R 0
+
