@@ -30,9 +30,8 @@ This process will take some time. Once the setup is complete, the workspace stru
 
     drone_x4_ws
     ├── src
+    │   ├── tilting_drone_x4
     │   └── tilting_drone_x4
-    │       ├── tilting_drone_x4
-    │       ├── px4_msg
     ├── PX4-Autopilot
     └── Micro-XRCE-DDS-Agent
 
