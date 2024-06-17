@@ -109,3 +109,9 @@ To change the servo motor (rotor arm) angle:
 ```bash
 ros2 param set /Drone_X4_Node arm_angle 30.0
 ```
+
+### Run controller node
+```bash
+ros2 launch tilting_drone_x4 tilt_rotor.launch.py
+
+```
