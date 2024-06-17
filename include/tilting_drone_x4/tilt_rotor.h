@@ -1,37 +1,3 @@
-/****************************************************************************
- *
- *   Copyright (c) 2023, SMART Research Group, Saxion University of
- *   Applied Sciences.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name PX4 nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- ****************************************************************************/
-
 #ifndef CONTROLLER_CONTROLLER_NODE_H
 #define CONTROLLER_CONTROLLER_NODE_H
 
@@ -40,22 +6,19 @@
 
 #include <px4_msgs/msg/offboard_control_mode.hpp>
 #include <px4_msgs/msg/vehicle_odometry.hpp>
-#include <px4_msgs/msg/vehicle_attitude_setpoint.hpp>
 #include <px4_msgs/msg/vehicle_command.hpp>
 #include <px4_msgs/msg/vehicle_status.hpp>
-#include <px4_msgs/msg/actuator_motors.hpp>
-#include <px4_msgs/msg/vehicle_attitude_setpoint.hpp>
-#include <px4_msgs/msg/vehicle_thrust_setpoint.hpp>
-#include <px4_msgs/msg/vehicle_torque_setpoint.hpp>
 #include <px4_msgs/msg/actuator_servos.hpp>
+#include <px4_msgs/msg/actuator_motors.hpp>
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <trajectory_msgs/msg/multi_dof_joint_trajectory_point.hpp>
 
+#include <Eigen/Dense>
+
 #include <string>
 
-#include "tilting_drone_x4/controller.h"
 
 #include <chrono>
 using namespace std::chrono_literals;
@@ -70,7 +33,7 @@ public:
     void updateControllerOutput();
 
 private:
-    controller controller_;
+    
 
     // Timers
     rclcpp::TimerBase::SharedPtr controllerTimer;
@@ -87,9 +50,6 @@ private:
     // Publishers
     rclcpp::Publisher<px4_msgs::msg::ActuatorMotors>::SharedPtr actuator_motors_publisher_;
     rclcpp::Publisher<px4_msgs::msg::ActuatorServos>::SharedPtr actuator_servos_publisher_;
-    rclcpp::Publisher<px4_msgs::msg::VehicleAttitudeSetpoint>::SharedPtr attitude_setpoint_publisher_;
-    rclcpp::Publisher<px4_msgs::msg::VehicleThrustSetpoint>::SharedPtr thrust_setpoint_publisher_;
-    rclcpp::Publisher<px4_msgs::msg::VehicleTorqueSetpoint>::SharedPtr torque_setpoint_publisher_;
     rclcpp::Publisher<px4_msgs::msg::OffboardControlMode>::SharedPtr offboard_control_mode_publisher_;
     rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr vehicle_command_publisher_;
 
@@ -100,16 +60,6 @@ private:
     // Messages
     px4_msgs::msg::ActuatorMotors actuator_motors_msg;
 
-    // UAV Parameters
-    double _arm_length;
-    int _num_of_arms;
-    // Eigen::Vector3d _omega_to_pwm_coefficients;
-    // int _PWM_MIN;
-    // int _PWM_MAX;
-    int _input_scaling;
-    // int _zero_position_armed;
-    // Eigen::MatrixXd torques_and_thrust_to_rotor_velocities_;
-    // Eigen::MatrixXd throttles_to_normalized_torques_and_thrust_;
 
     // Controller gains
     Eigen::Vector3d position_gain_;
@@ -120,15 +70,10 @@ private:
     Eigen::Vector4d actuator_thrust_W;
     Eigen::Vector4d alpha_angle_W;
 
-    // // Logic switches
-    int control_mode_;
-    // bool in_sitl_mode_;
-
     px4_msgs::msg::VehicleStatus current_status_;
     bool connected_ = false;
 
     void loadParams();
-    // void secureConnection();
     void arm();
     void disarm();
 
@@ -144,19 +89,6 @@ private:
     void publishOffboardControlModeMsg();
     void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0);
 
-    // void compute_ControlAllocation_and_ActuatorEffect_matrices();
-    // void px4Inverse (Eigen::Vector4d *normalized_torque_and_thrust, Eigen::VectorXd *throttles, const Eigen::VectorXd *wrench);
-    void px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorXd *throttles, const Eigen::VectorXd *wrench);
-
-    inline void _setArmAngle(const Eigen::Vector4d &alpha_angle_)
-    {
-         alpha_angle_W = alpha_angle_ ;
-    }
-
-    inline void _setActuatorThrust(const Eigen::Vector4d &actuator_thrust)
-    {
-         actuator_thrust_W = actuator_thrust;
-    }
 
     inline Eigen::Vector3d rotateVectorFromToENU_NED(const Eigen::Vector3d &vec_in)
     {
@@ -199,27 +131,25 @@ private:
     }
 
     inline void eigenOdometryFromPX4Msg(const px4_msgs::msg::VehicleOdometry::SharedPtr msg,
-                                        Eigen::Vector3d &position_m, Eigen::Quaterniond &orientation_m,
-                                        Eigen::Vector3d &velocity_m, Eigen::Vector3d &angular_velocity_m)
+                                        Eigen::Vector3d &position_W, Eigen::Quaterniond &orientation_B_W,
+                                        Eigen::Vector3d &velocity_B, Eigen::Vector3d &angular_velocity_B)
     {
-
-        position_m = rotateVectorFromToENU_NED(Eigen::Vector3d(msg->position[0], msg->position[1], msg->position[2]));
+        position_W = rotateVectorFromToENU_NED(Eigen::Vector3d(msg->position[0], msg->position[1], msg->position[2]));
 
         Eigen::Quaterniond quaternion(msg->q[0], msg->q[1], msg->q[2], msg->q[3]);
-        orientation_m = rotateQuaternionFromToENU_NED(quaternion);
+        orientation_B_W = rotateQuaternionFromToENU_NED(quaternion);
 
-        velocity_m = rotateVectorFromToENU_NED(Eigen::Vector3d(msg->velocity[0], msg->velocity[1], msg->velocity[2]));
+        velocity_B = rotateVectorFromToENU_NED(Eigen::Vector3d(msg->velocity[0], msg->velocity[1], msg->velocity[2]));
 
-        angular_velocity_m = rotateVectorFromToFRD_FLU(Eigen::Vector3d(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]));
+        angular_velocity_B = rotateVectorFromToFRD_FLU(Eigen::Vector3d(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]));
     }
 
    
 
     inline void eigenTrajectoryPointFromPoseMsg(
-        const geometry_msgs::msg::PoseStamped::SharedPtr &msg, Eigen::Vector3d &position_m, Eigen::Quaterniond &orientation_W_B)
+        const geometry_msgs::msg::PoseStamped::SharedPtr &msg, Eigen::Vector3d &position_W, Eigen::Quaterniond &orientation_W_B)
     {
-
-        position_m << msg->pose.position.x, msg->pose.position.y, msg->pose.position.z;
+        position_W << msg->pose.position.x, msg->pose.position.y, msg->pose.position.z;
         Eigen::Quaterniond quaternion(msg->pose.orientation.w,
                                       msg->pose.orientation.x,
                                       msg->pose.orientation.y,

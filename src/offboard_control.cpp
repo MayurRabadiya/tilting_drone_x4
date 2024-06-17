@@ -35,7 +35,7 @@
  * @file offboard_control.cpp
  * @addtogroup examples
  * @author Mickey Cowden <info@cowden.tech>
- * @author Nuno Marques <nuno.marques@dronesolutions.io>_1
+ * @author Nuno Marques <nuno.marques@dronesolutions.io>
  */
 
 #include <px4_msgs/msg/offboard_control_mode.hpp>
@@ -64,10 +64,9 @@ public:
 
 		offboard_setpoint_counter_ = 0;
 
-		auto timer_callback = [this]() -> void
-		{
-			if (offboard_setpoint_counter_ == 10)
-			{
+		auto timer_callback = [this]() -> void {
+
+			if (offboard_setpoint_counter_ == 10) {
 				// Change to Offboard mode after 10 setpoints
 				this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 6);
 
@@ -80,8 +79,7 @@ public:
 			publish_trajectory_setpoint();
 
 			// stop the counter after reaching 11
-			if (offboard_setpoint_counter_ < 11)
-			{
+			if (offboard_setpoint_counter_ < 11) {
 				offboard_setpoint_counter_++;
 			}
 		};
@@ -98,9 +96,9 @@ private:
 	rclcpp::Publisher<TrajectorySetpoint>::SharedPtr trajectory_setpoint_publisher_;
 	rclcpp::Publisher<VehicleCommand>::SharedPtr vehicle_command_publisher_;
 
-	std::atomic<uint64_t> timestamp_; //!< common synced timestamped
+	std::atomic<uint64_t> timestamp_;   //!< common synced timestamped
 
-	uint64_t offboard_setpoint_counter_; //!< counter for the number of setpoints sent
+	uint64_t offboard_setpoint_counter_;   //!< counter for the number of setpoints sent
 
 	void publish_offboard_control_mode();
 	void publish_trajectory_setpoint();

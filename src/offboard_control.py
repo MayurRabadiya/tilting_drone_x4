@@ -12,6 +12,10 @@ from px4_msgs.msg import VehicleStatus
 from px4_msgs.msg import ActuatorServos
 from px4_msgs.msg import ActuatorMotors
 from px4_msgs.msg import VehicleOdometry
+from px4_msgs.msg import VehicleControlMode
+
+from px4_msgs.msg import TiltingMcDesiredAngles
+
 
 from rcl_interfaces.msg import SetParametersResult
 
@@ -37,18 +41,31 @@ class OffboardControl(Node):
             depth=1)
 
         # Create subscribers
-        self.vehicle_local_position_subscriber = self.create_subscription(VehicleLocalPosition, '/fmu/out/vehicle_local_position', self.vehicle_local_position_callback, qos_profile)
-        self.vehicle_status_subscriber = self.create_subscription(VehicleStatus, '/fmu/out/vehicle_status', self.vehicle_status_callback, qos_profile)
-        self.vehicle_odometry_subsciber = self.create_subscription(VehicleOdometry, '/fmu/out/vehicle_odometry', self.vehicle_odometry_callback, qos_profile)
-
+        self.vehicle_local_position_subscriber = self.create_subscription(
+            VehicleLocalPosition, '/fmu/out/vehicle_local_position', self.vehicle_local_position_callback, qos_profile)
+        self.vehicle_status_subscriber = self.create_subscription(
+            VehicleStatus, '/fmu/out/vehicle_status', self.vehicle_status_callback, qos_profile)
+        self.vehicle_odometry_subsciber = self.create_subscription(
+            VehicleOdometry, '/fmu/out/vehicle_odometry', self.vehicle_odometry_callback, qos_profile)
 
         # Create publishers
-        self.offboard_control_mode_publisher = self.create_publisher(OffboardControlMode, '/fmu/in/offboard_control_mode', qos_profile)
-        self.trajectory_setpoint_publisher = self.create_publisher(TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile)
-        self.vehicle_command_publisher = self.create_publisher(VehicleCommand, '/fmu/in/vehicle_command', qos_profile)
+        self.offboard_control_mode_publisher = self.create_publisher(
+            OffboardControlMode, '/fmu/in/offboard_control_mode', qos_profile)
+        self.trajectory_setpoint_publisher = self.create_publisher(
+            TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile)
 
-        self.offboard_servo_control = self.create_publisher(ActuatorServos, '/fmu/in/actuator_servos', qos_profile)
-        self.offboard_motor_control = self.create_publisher(ActuatorMotors, '/fmu/in/actuator_motors', qos_profile)
+        self.tilting_mc_desired_angles_pub = self.create_publisher(
+            TiltingMcDesiredAngles, '/fmu/in/tilting_mc_desired_angles', qos_profile)
+
+        self.vehicle_command_publisher = self.create_publisher(
+            VehicleCommand, '/fmu/in/vehicle_command', qos_profile)
+
+        self.offboard_servo_control = self.create_publisher(
+            ActuatorServos, '/fmu/in/actuator_servos', qos_profile)
+        self.offboard_motor_control = self.create_publisher(
+            ActuatorMotors, '/fmu/in/actuator_motors', qos_profile)
+        self.VehicleControlMode_pub = self.create_publisher(
+            VehicleControlMode, '/fmu/in/vehicle_control_mode', qos_profile)
 
         # Initialize variables
         self.nav_state = VehicleStatus.NAVIGATION_STATE_MAX
@@ -95,7 +112,6 @@ class OffboardControl(Node):
         self.orientation_b_w = R.from_quat([odom_msgs.q[0], odom_msgs.q[1],
                                             odom_msgs.q[2], odom_msgs.q[3]])
         self.angular_velocity_b = odom_msgs.angular_velocity
-        
 
     def offboard_callback(self):
         self.publish_offboard_control_heartbeat_signal()
@@ -125,12 +141,14 @@ class OffboardControl(Node):
 
     def disarm(self):
         """Send a disarm command to the vehicle."""
-        self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0)
+        self.publish_vehicle_command(
+            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0)
         self.get_logger().info('Disarm command sent')
 
     def engage_offboard_mode(self):
         """Switch to offboard mode."""
-        self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=6.0)
+        self.publish_vehicle_command(
+            VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=6.0)
         self.get_logger().info("Switching to offboard mode")
 
     def land(self):
@@ -155,6 +173,12 @@ class OffboardControl(Node):
         msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.offboard_servo_control.publish(msg)
 
+        tilt = TiltingMcDesiredAngles()
+        tilt.timestamp = int(Clock().now().nanoseconds / 1000)
+        tilt.pitch_body = 10.0
+        tilt.roll_body = 10.0
+        # self.tilting_mc_desired_angles_pub.publish(tilt)
+
     def arm(self):
         """Drone Arming"""
         self.publish_vehicle_command(
@@ -171,6 +195,14 @@ class OffboardControl(Node):
         msg.direct_actuator = False
         msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.offboard_control_mode_publisher.publish(msg)
+
+        vcm = VehicleControlMode()
+        vcm.timestamp = int(Clock().now().nanoseconds / 1000)
+        vcm.flag_control_manual_enabled = True
+        vcm.flag_control_position_enabled = False
+        vcm.flag_control_velocity_enabled = False
+        vcm.flag_control_altitude_enabled = False
+        self.VehicleControlMode_pub.publish(vcm)
 
     def publish_position_setpoint(self, x: float, y: float, z: float):
         """Publish the trajectory setpoint."""
@@ -343,8 +375,8 @@ class OffboardControl(Node):
             self.rotor_arm()  # Use the arm_angle parameter
             # self.infinity_traj()
             # self.square_traj()
-            self.circular_traj()
-            # self.publish_position_setpoint(0.0, 0.0, -self.altitude)
+            # self.circular_traj()
+            self.publish_position_setpoint(0.0, 0.0, -self.altitude)
 
 
 def main(args=None) -> None:

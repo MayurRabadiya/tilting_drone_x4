@@ -9,7 +9,6 @@ endif()
 # Find ROS 2 dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclpy REQUIRED)
-find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -21,22 +20,28 @@ find_package(builtin_interfaces REQUIRED)
 # Specify additional locations of header files
 include_directories(include ${EIGEN3_INCLUDE_DIR})  # Use EIGEN3_INCLUDE_DIR instead of EIGEN3_DIR
 
-# add_executable(tilting_drone_x4_node src/controller.cpp src/controller_node.cpp )
-# ament_target_dependencies(offboard_controller_node  rclcpp  std_msgs  geometry_msgs  Eigen3  px4_msgs  trajectory_msgs)
-# install(TARGETS offboard_controller_node DESTINATION lib/${PROJECT_NAME})
+add_executable(tilting_drone_x4_node src/controller.cpp src/controller_node.cpp)
+ament_target_dependencies(tilting_drone_x4_node rclcpp std_msgs geometry_msgs Eigen3 px4_msgs trajectory_msgs)
+install(TARGETS tilting_drone_x4_node DESTINATION lib/${PROJECT_NAME})
 
-# add_executable(circle_trajectory_node src/TrajectoryPublishers/circle_trajectory_node.cpp)
-# ament_target_dependencies(circle_trajectory_node  rclcpp  geometry_msgs)
-# install(TARGETS circle_trajectory_node DESTINATION lib/${PROJECT_NAME})
 
-# add_executable(offboard_control src/offboard_control.cpp)
-# ament_target_dependencies(offboard_control rclcpp px4_msgs)
-# install(TARGETS offboard_control DESTINATION lib/${PROJECT_NAME})
+add_executable(tilt_rotor src/tilt_rotor.cpp)
+ament_target_dependencies(tilt_rotor rclcpp std_msgs geometry_msgs Eigen3 px4_msgs trajectory_msgs)
+install(TARGETS tilt_rotor DESTINATION lib/${PROJECT_NAME})
+
+
+add_executable(circle_trajectory_node src/TrajectoryPublishers/circle_trajectory_node.cpp)
+ament_target_dependencies(circle_trajectory_node rclcpp geometry_msgs)
+install(TARGETS circle_trajectory_node DESTINATION lib/${PROJECT_NAME})
+
+add_executable(offboard_control src/offboard_control.cpp)
+ament_target_dependencies(offboard_control rclcpp px4_msgs)
+install(TARGETS offboard_control DESTINATION lib/${PROJECT_NAME})
 
 # Install directories
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME} )
-install(DIRECTORY config DESTINATION share/${PROJECT_NAME} )
-install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME} )
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

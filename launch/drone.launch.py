@@ -66,13 +66,13 @@ def generate_launch_description():
         # Run the PX4 SITL process
         run_px4_sitl,
         # Start the visualizer node
-        visualizer,
+        # visualizer,
         # Start the ROS-Gazebo parameter bridge
         bridge,
         # Start the Micro XRCE-DDS Agent process
         run_microxrce_agent,
         # Start the RViz visualization tool
-        rviz
+        # rviz
     ])
 
     return ld
