@@ -45,7 +45,7 @@ void controller::calculateControllerOutput(Eigen::VectorXd *controller_torque_th
         const Eigen::Matrix3d e_R_matrix = 0.5 * (R_d.transpose() * R_m - R_m.transpose() * R_d);
         Eigen::Vector3d e_R;
         e_R << e_R_matrix(2, 1), e_R_matrix(0,2), e_R_matrix(1,0);
-        const Eigen::Vector3d r_R = -attitude_gain_.cwiseProduct(r_R) - angular_rate_gain_.cwiseProduct(angular_velocity_m_);
+        const Eigen::Vector3d r_R = -attitude_gain_.cwiseProduct(e_R) - angular_rate_gain_.cwiseProduct(angular_velocity_m_);
         Eigen::Vector3d tau = _inertia_matrix.cwiseProduct(r_R);
 
         *controller_torque_thrust << thrust, tau;
