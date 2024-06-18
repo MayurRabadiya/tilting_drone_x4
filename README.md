@@ -112,14 +112,17 @@ ros2 param set /Drone_X4_Node arm_angle 30.0
 
 ### Run controller node
 ```bash
-ros2 launch tilting_drone_x4 tilt_rotor.launch.py
+ros2 launch tilting_drone_x4 tilt_drone.launch.py
 
 ```
 ### TO edit gains:
 ```bash
 tilting_drone_x4/config/controller/initial_gains_x500.yaml
 ```
-K_P = Position gain
-K_v = Velocity gain
-K_R = Orientation gain
-k_w = Angular velocity gain
+K_P = Position gain <br/>
+K_v = Velocity gain <br/>
+K_R = Orientation gain <br/>
+k_w = Angular velocity gain <br/>
+<br/>
+position = Desired Position in meter.<br/>
+Eular = Desired Roll pitch yaw angle in rad.<br/>
