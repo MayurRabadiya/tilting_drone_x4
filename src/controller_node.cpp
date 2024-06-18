@@ -113,7 +113,6 @@ void ControllerNode::loadParams()
         this->get_parameter("control_gains.K_w_y").as_double(),
         this->get_parameter("control_gains.K_w_z").as_double();
 
-
     this->declare_parameter("control_gains.position_x", 0.0);
     this->declare_parameter("control_gains.position_y", 0.0);
     this->declare_parameter("control_gains.position_z", 0.0);
@@ -122,18 +121,15 @@ void ControllerNode::loadParams()
     this->declare_parameter("control_gains.eular_pitch", 0.0);
     this->declare_parameter("control_gains.eular_yaw", 0.0);
 
-
     position_des_ << this->get_parameter("control_gains.K_R_x").as_double(),
         this->get_parameter("control_gains.position_x").as_double(),
         this->get_parameter("control_gains.position_y").as_double();
-        this->get_parameter("control_gains.position_z").as_double();
-
+    this->get_parameter("control_gains.position_z").as_double();
 
     eular_des_ << this->get_parameter("control_gains.K_w_x").as_double(),
         this->get_parameter("control_gains.eular_roll").as_double(),
         this->get_parameter("control_gains.eular_pitch").as_double();
-        this->get_parameter("control_gains.eular_yaw").as_double();
-
+    this->get_parameter("control_gains.eular_yaw").as_double();
 
     // pass the UAV Parameters and controller gains to the controller
     controller_.setUavMass(_uav_mass);
@@ -191,6 +187,7 @@ void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorX
         k / (4.0 * l * p), k / (4.0 * l * p), 1.0 / 4.0, -1.0 / (4.0 * l * p), -1.0 / (4.0 * l * p), std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l)));
 
     Eigen::VectorXd result = mixing_matrix * (*wrench);
+    Eigen::VectorXd t_T = *wrench;
 
     float T1 = sqrt(pow(result(0), 2) + pow(result(1), 2));
     float alpha1 = atan2(result(0), result(1));
@@ -209,11 +206,12 @@ void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorX
     *throttles /= _input_scaling;
 
     alpha_angle->resize(4);
-  
-    *alpha_angle << alpha1, alpha2, alpha3, alpha4;
-    *alpha_angle  /=  3.1415926536;
 
-    // RCLCPP_INFO(this->get_logger(), "TTTTT: %f    %f    %f    %f   %f    %f    %f    %f ", result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7]);
+    *alpha_angle << alpha1, alpha2, alpha3, alpha4;
+    *alpha_angle /= 3.1415926536;
+
+    RCLCPP_INFO(this->get_logger(), "Thrust : %f    %f    %f", t_T[0], t_T[1], t_T[2]);
+    RCLCPP_INFO(this->get_logger(), "Torque : %f    %f    %f", t_T[3], t_T[4], t_T[5]);
 }
 
 void ControllerNode::arm()
