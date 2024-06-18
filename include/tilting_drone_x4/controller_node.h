@@ -103,13 +103,9 @@ private:
     // UAV Parameters
     double _arm_length;
     int _num_of_arms;
-    // Eigen::Vector3d _omega_to_pwm_coefficients;
-    // int _PWM_MIN;
-    // int _PWM_MAX;
+
     int _input_scaling;
-    // int _zero_position_armed;
-    // Eigen::MatrixXd torques_and_thrust_to_rotor_velocities_;
-    // Eigen::MatrixXd throttles_to_normalized_torques_and_thrust_;
+    bool servo_enable;
 
     // Controller gains
     Eigen::Vector3d position_gain_;

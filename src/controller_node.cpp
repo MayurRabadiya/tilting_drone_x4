@@ -66,7 +66,9 @@ void ControllerNode::loadParams()
     this->declare_parameter("uav_parameters.inertia.y", 0.0);
     this->declare_parameter("uav_parameters.inertia.z", 0.0);
     this->declare_parameter("uav_parameters.gravity", 0.0);
+    this->declare_parameter("uav_parameters.ServoEnable", true);
 
+    servo_enable = this->get_parameter("ServoEnable").as_bool();
     double _uav_mass = this->get_parameter("uav_parameters.mass").as_double();
     _arm_length = this->get_parameter("uav_parameters.arm_length").as_double();
     _num_of_arms = this->get_parameter("uav_parameters.num_of_arms").as_int();
@@ -324,12 +326,14 @@ void ControllerNode::publishActuatorMotorsMsg(const Eigen::VectorXd &throttles, 
 
     px4_msgs::msg::ActuatorServos actuator_servos_msg;
     actuator_servos_msg.timestamp = this->get_clock()->make_shared()->now().nanoseconds() / 1000;
-    actuator_servos_msg.control = {(float)alpha_angle[0], (float)alpha_angle[1], (float)alpha_angle[2], (float)alpha_angle[3], 0.0, 0.0, 0.0, 0.0};
-    // actuator_servos_msg.control = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    if(servo_enable){actuator_servos_msg.control = {(float)alpha_angle[0], (float)alpha_angle[1], (float)alpha_angle[2], (float)alpha_angle[3], 0.0, 0.0, 0.0, 0.0};}
+    else{actuator_servos_msg.control = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};}
+    
     actuator_servos_publisher_->publish(actuator_servos_msg);
 
-    RCLCPP_INFO(this->get_logger(), "Servo: %f    %f    %f    %f ", alpha_angle[0], alpha_angle[1], alpha_angle[2], alpha_angle[3]);
-    RCLCPP_INFO(this->get_logger(), "Motor: %f    %f    %f    %f ", throttles[0], throttles[1], throttles[2], throttles[3]);
+    RCLCPP_INFO(this->get_logger(), "Servo : %f    %f    %f    %f ", alpha_angle[0], alpha_angle[1], alpha_angle[2], alpha_angle[3]);
+    RCLCPP_INFO(this->get_logger(), "Motor : %f    %f    %f    %f ", throttles[0], throttles[1], throttles[2], throttles[3]);
 }
 
 void ControllerNode::updateControllerOutput()
