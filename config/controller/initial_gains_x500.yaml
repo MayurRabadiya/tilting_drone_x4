@@ -13,3 +13,9 @@
         K_w_x: 0.5
         K_w_y: 0.5
         K_w_z: 0.5
+        position_x: 0.0   # in meter (m)   
+        position_y: 0.0   # in meter (m)
+        position_z: 0.0   # in meter (m)
+        eular_roll : 0.0  # angle in radian (rad)
+        eular_pitch: 0.0  # angle in radian (rad)
+        eular_yaw" : 0.0  # angle in radian (rad)

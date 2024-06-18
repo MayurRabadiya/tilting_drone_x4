@@ -117,6 +117,9 @@ private:
     Eigen::Vector3d attitude_gain_;
     Eigen::Vector3d ang_vel_gain_;
 
+    Eigen::Vector3d position_des_;
+    Eigen::Vector3d eular_des_;
+
     Eigen::Vector4d actuator_thrust_W;
     Eigen::Vector4d alpha_angle_W;
 

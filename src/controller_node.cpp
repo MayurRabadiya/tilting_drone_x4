@@ -1,5 +1,3 @@
-
-
 #include "tilting_drone_x4/controller_node.h"
 
 ControllerNode::ControllerNode()
@@ -115,6 +113,28 @@ void ControllerNode::loadParams()
         this->get_parameter("control_gains.K_w_y").as_double(),
         this->get_parameter("control_gains.K_w_z").as_double();
 
+
+    this->declare_parameter("control_gains.position_x", 0.0);
+    this->declare_parameter("control_gains.position_y", 0.0);
+    this->declare_parameter("control_gains.position_z", 0.0);
+
+    this->declare_parameter("control_gains.eular_roll", 0.0);
+    this->declare_parameter("control_gains.eular_pitch", 0.0);
+    this->declare_parameter("control_gains.eular_yaw", 0.0);
+
+
+    position_des_ << this->get_parameter("control_gains.K_R_x").as_double(),
+        this->get_parameter("control_gains.position_x").as_double(),
+        this->get_parameter("control_gains.position_y").as_double();
+        this->get_parameter("control_gains.position_z").as_double();
+
+
+    eular_des_ << this->get_parameter("control_gains.K_w_x").as_double(),
+        this->get_parameter("control_gains.eular_roll").as_double(),
+        this->get_parameter("control_gains.eular_pitch").as_double();
+        this->get_parameter("control_gains.eular_yaw").as_double();
+
+
     // pass the UAV Parameters and controller gains to the controller
     controller_.setUavMass(_uav_mass);
     controller_.setInertiaMatrix(_inertia_matrix);
@@ -123,6 +143,7 @@ void ControllerNode::loadParams()
     controller_.setKVelocityGain(velocity_gain_);
     controller_.setKAttitudeGain(attitude_gain_);
     controller_.setKAngularRateGain(ang_vel_gain_);
+    controller_.setDesiredPose(position_des_, eular_des_);
 }
 
 void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorXd *throttles, const Eigen::VectorXd *wrench)
