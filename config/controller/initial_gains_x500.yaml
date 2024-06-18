@@ -18,5 +18,5 @@
         position_z: 1.5   # in meter (m)
         eular_roll : 0.0  # angle in radian (rad)
         eular_pitch: 0.0  # angle in radian (rad)
-        eular_yaw" : 0.0  # angle in radian (rad)
-        servoEnable : false  # To publish servo motor angle
+        eular_yaw  : 0.0  # angle in radian (rad)
+        ServoEnable : false  # To publish servo motor angle

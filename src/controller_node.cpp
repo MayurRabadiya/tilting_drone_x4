@@ -68,7 +68,7 @@ void ControllerNode::loadParams()
     this->declare_parameter("uav_parameters.gravity", 0.0);
     this->declare_parameter("uav_parameters.ServoEnable", true);
 
-    servo_enable = this->get_parameter("ServoEnable").as_bool();
+    servo_enable = this->get_parameter("uav_parameters.ServoEnable").as_bool();
     double _uav_mass = this->get_parameter("uav_parameters.mass").as_double();
     _arm_length = this->get_parameter("uav_parameters.arm_length").as_double();
     _num_of_arms = this->get_parameter("uav_parameters.num_of_arms").as_int();
