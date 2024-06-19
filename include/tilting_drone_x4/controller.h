@@ -116,7 +116,7 @@ public:
         Eigen::AngleAxisd pitchAngle(pitch, Eigen::Vector3d::UnitY());
         Eigen::AngleAxisd yawAngle(yaw, Eigen::Vector3d::UnitZ());
 
-        Eigen::Quaterniond q = yawAngle * pitchAngle * rollAngle;
+        Eigen::Quaterniond q = rollAngle * pitchAngle * yawAngle;
         Eigen::Matrix3d rotationMatrix = q.matrix();
         return rotationMatrix;
     }
