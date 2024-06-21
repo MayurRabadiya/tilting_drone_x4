@@ -58,8 +58,8 @@ Or you can refer this page:
 To clone the repository, run the following commands in your terminal:
 
 ```bash
-mkdir -p ~/drone_x4_ws/src
-cd ~/drone_x4_ws/src
+mkdir -p drone_x4_ws/src
+cd drone_x4_ws/src
 git clone https://github.com/MayurRabadiya/tilting_drone_x4.git
 
 ```
