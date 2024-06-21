@@ -40,13 +40,13 @@ clone_and_build() {
     local repo_dir=$2
     print_info "Cloning $repo_url into $repo_dir..."
     git clone "$repo_url" "$repo_dir" || { print_error "Failed to clone $repo_url"; exit 1; }
-    # cd "$repo_dir" || { print_error "Failed to cd into $repo_dir"; exit 1; }
-    # mkdir build
-    # cd build
-    # cmake ..
-    # make || { print_error "Failed to build $repo_dir"; exit 1; }
-    # sudo make install
-    # sudo ldconfig /usr/local/lib/
+    cd "$repo_dir" || { print_error "Failed to cd into $repo_dir"; exit 1; }
+    mkdir build
+    cd build
+    cmake ..
+    make || { print_error "Failed to build $repo_dir"; exit 1; }
+    sudo make install
+    sudo ldconfig /usr/local/lib/
     cd "$WORKSPACE_DIR" || { print_error "Failed to return to workspace"; exit 1; }
 }
 
