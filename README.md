@@ -66,7 +66,7 @@ git clone https://github.com/MayurRabadiya/tilting_drone_x4.git
 
 ### Setup Dependencies
 ```bash
-cd ~/tilting_drone_x4
+cd tilting_drone_x4
 sh setup_dependencies.sh
 
 ```
@@ -82,7 +82,7 @@ This process will take some time. Once the setup is complete, the workspace stru
 ## Running the Simulation
 ### Build the Workspace
 ```bash
-cd ~/drone_x4_ws
+cd drone_x4_ws
 colcon build --symlink-install
 source install/local_setup.bash
 
