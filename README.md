@@ -27,7 +27,7 @@ source /opt/ros/humble/setup.bash && echo "source /opt/ros/humble/setup.bash" >>
 
 ```
 Or you can refer this page:
-[ROS2 Humble](https://docs.ros.org/en/crystal/Installation/Linux-Install-Binary.html).
+[ROS2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html).
 
 
 ### To Install GAZEBO garden:
