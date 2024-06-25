@@ -10,8 +10,8 @@ echo "=========== Setting Up tilting_drone_x4 dependencies for PX4 SITL ========
 
 # Directory paths
 WORKSPACE_DIR=$(dirname "$(dirname "$(realpath "$0")")")
-MICRO_XRCE_DDS_AGENT_DIR="$WORKSPACE_DIR/../Micro-XRCE-DDS-Agent"
-PX4_AUTOPILOT_DIR="$WORKSPACE_DIR/../PX4-Autopilot"
+MICRO_XRCE_DDS_AGENT_DIR="$WORKSPACE_DIR/../../Micro-XRCE-DDS-Agent"
+PX4_AUTOPILOT_DIR="$WORKSPACE_DIR/../../PX4-Autopilot"
 DRONE_X4_GAZEBO_DIR="$WORKSPACE_DIR/tilting_drone_x4/gazebo"
 PX4_MODEL_DIR="$PX4_AUTOPILOT_DIR/Tools/simulation/gz/models"
 AIRFRAME_DIR="$PX4_AUTOPILOT_DIR/ROMFS/px4fmu_common/init.d-posix/airframes"
