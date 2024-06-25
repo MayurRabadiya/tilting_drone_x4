@@ -9,7 +9,7 @@ import os
 
 # Define the PX4-Autopilot path under the workspace directory
 home_dir = os.path.expanduser('~')
-px4_autopilot_dir = os.path.join(home_dir, 'ws', 'PX4-Autopilot')
+px4_autopilot_dir = os.path.join(home_dir, 'workspace', 'PX4-Autopilot')
 package_dir = get_package_share_directory('tilting_drone_x4')
 
 def generate_launch_description():
@@ -51,13 +51,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Define the ROS-Gazebo parameter bridge node
-    bridge = Node(
-        package='ros_gz_bridge',
-        executable='parameter_bridge',
-        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
-        output='screen'
-    )
 
     # Create the launch description and populate it with actions
     ld = LaunchDescription([
@@ -67,8 +60,6 @@ def generate_launch_description():
         run_px4_sitl,
         # Start the visualizer node
         # visualizer,
-        # Start the ROS-Gazebo parameter bridge
-        bridge,
         # Start the Micro XRCE-DDS Agent process
         run_microxrce_agent,
         # Start the RViz visualization tool
