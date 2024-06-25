@@ -72,13 +72,13 @@ sh setup_dependencies.sh
 ```
 This process will take some time. Once the setup is complete, the workspace structure will look like this:
 
-workspace
-  ├── drone_x4_ws
-  │   └── src
-  │       ├── tilting_drone_x4
-  │       └── tilting_drone_x4
-  ├── PX4-Autopilot
-  └── Micro-XRCE-DDS-Agent
+    workspace
+    ├── drone_x4_ws
+    │   └── src
+    │       ├── tilting_drone_x4
+    │       └── px4_msgs
+    ├── PX4-Autopilot
+    └── Micro-XRCE-DDS-Agent
 
 ## Running the Simulation
 ### Build the Workspace
