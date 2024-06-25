@@ -126,3 +126,12 @@ k_w = Angular velocity gain <br/>
 <br/>
 position = Desired Position in meter.<br/>
 Eular = Desired Roll pitch yaw angle in rad.<br/>
+
+
+
+### To Debug GAZEBO:
+## If drone model is not spawning in gazebo:
+Run this command.
+```bash
+pkill -9 ruby
+```
