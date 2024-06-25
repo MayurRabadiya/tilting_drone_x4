@@ -152,32 +152,14 @@ void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorX
     Eigen::MatrixXd mixing_matrix(8, 6);
     Eigen::MatrixXd mixing_matrix_(6, 8);
 
-    // const double h = _moment_constant / _thrust_constant;
-    // const double h = 4.23e-06 / 0.0026;
-    const double p = 0.70710678118;
-    const double l = 0.18560;
+    const double p = 0.70710678118;  // sqrt(2)/2
+    const double l = 0.18560;        // rotor arm length
 
-    // mixing_matrix << 1.0 / (4.0 * p), -1.0 / (4.0 * p), 0, 0, 0, -l * l / (4 * l * (l * l + h * h)),
-    //             h / (4 * l * p), -h / (4 * l * p), 1.0 / 4.0, 1.0 / (4 * l * p), -1.0 / (4 * l * p), -h * h / (4 * h * (l * l + h * h)),
-    //     1.0 / (4 * p), 1.0 / (4 * p), 0, 0, 0, -l * l / (4 * l * (l * l + h * h)),
-    //     -h / (4 * l * p), -h / (4 * l * p), 1.0 / 4.0, 1.0 / (4 * l * p), 1.0 / (4 * l * p), h * h / (4 * h * (l * l + h * h)),
-    //     -1.0 / (4 * p), 1.0 / (4 * p), 0, 0, 0, -l * l / (4 * l * (l * l + h * h)),
-    //     -h / (4 * l * p), h / (4 * l * p), 1.0 / 4.0, -1.0 / (4 * l * p), 1.0 / (4 * l * p), -h * h / (4 * h * (l * l + h * h)),
-    //     -1.0 / (4 * p), -1.0 / (4 * p), 0, 0, 0, -l * l / (4 * l * (l * l + h * h)),
-    //     h / (4 * l * p), h / (4 * l * p), 1.0 / 4.0, -1.0 / (4 * l * p), -1.0 / (4 * l * p), h * h / (4 * h * (l * l + h * h));
 
-    const double kt = 4.23e-06;
-    const double kf = 0.0026;
+    const double kt = 4.23e-06;  // drage constant
+    const double kf = 0.0026;    // force constant
     const double k = kt / kf;
 
-    // mixing_matrix << 1 / (4 * p), -1 / (4 * p), 0, 0, 0, -abs(l) ^ 2 / (4 * l * (abs(k) ^ 2 + abs(l) ^ 2)),
-    //     k / (4 * l * p), -k / (4 * l * p), 1 / 4, 1 / (4 * l * p), -1 / (4 * l * p), -abs(k) ^ 2 / (4 * k * (abs(k) ^ 2 + abs(l) ^ 2)),
-    //     1 / (4 * p), 1 / (4 * p), 0, 0, 0, -abs(l) ^ 2 / (4 * l * (abs(k) ^ 2 + abs(l) ^ 2)),
-    //     -k / (4 * l * p), -k / (4 * l * p), 1 / 4, 1 / (4 * l * p), 1 / (4 * l * p), abs(k) ^ 2 / (4 * k * (abs(k) ^ 2 + abs(l) ^ 2)),
-    //     -1 / (4 * p), 1 / (4 * p), 0, 0, 0, -abs(l) ^ 2 / (4 * l * (abs(k) ^ 2 + abs(l) ^ 2)),
-    //     -k / (4 * l * p), k / (4 * l * p), 1 / 4, -1 / (4 * l * p), 1 / (4 * l * p), -abs(k) ^ 2 / (4 * k * (abs(k) ^ 2 + abs(l) ^ 2)),
-    //     -1 / (4 * p), -1 / (4 * p), 0, 0, 0, -abs(l) ^ 2 / (4 * l * (abs(k) ^ 2 + abs(l) ^ 2)),
-    //     k / (4 * l * p), k / (4 * l * p), 1 / 4, -1 / (4 * l * p), -1 / (4 * l * p), abs(k) ^ 2 / (4 * k * (abs(k) ^ 2 + abs(l) ^ 2));
 
     mixing_matrix << 1.0 / (4 * p), -1.0 / (4 * p), 0.0, 0.0, 0.0, -std::abs(l) * std::abs(l) / (4.0 * l * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
         k / (4.0 * l * p), -k / (4.0 * l * p), 1.0 / 4.0, 1.0 / (4.0 * l * p), -1.0 / (4.0 * l * p), -std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
@@ -205,16 +187,43 @@ void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorX
 
     throttles->resize(4);
     *throttles << T1, T2, T3, T4;
-    *throttles /= _input_scaling;
+    *throttles /= _input_scaling;   // PX4 only accepts motor input in range 0 to 1
 
     alpha_angle->resize(4);
 
     *alpha_angle << alpha1, alpha2, alpha3, alpha4;
-    *alpha_angle /= 3.1415926536;
+    *alpha_angle /= 3.1415926536;  // PX4 only accepts servo motor input in range -1 to 1
+
+    
+
+    RCLCPP_INFO(this->get_logger(), "e_p    : %f    %f    %f", controller_._e_p[0], controller_._e_p[1], controller_._e_p[2]);
+    RCLCPP_INFO(this->get_logger(), "r_p    : %f    %f    %f", controller_._r_p[0], controller_._r_p[1], controller_._r_p[2]);
+    RCLCPP_INFO(this->get_logger(), "r_p_g  : %f    %f    %f", controller_._r_p_g[0], controller_._r_p_g[1], controller_._r_p_g[2]);
+    RCLCPP_INFO(this->get_logger(), "e_R    : %f    %f    %f", controller_._e_R[0], controller_._e_R[1], controller_._e_R[2]);
+    RCLCPP_INFO(this->get_logger(), "r_R    : %f    %f    %f", controller_._r_R[0], controller_._r_R[1], controller_._r_R[2]);
+
+     
+    RCLCPP_INFO(this->get_logger(), "e_R_matrix  :  \n%s", matrix3dToString(controller_._e_R_matrix).c_str());
 
     RCLCPP_INFO(this->get_logger(), "Thrust : %f    %f    %f", t_T[0], t_T[1], t_T[2]);
     RCLCPP_INFO(this->get_logger(), "Torque : %f    %f    %f", t_T[3], t_T[4], t_T[5]);
 }
+
+
+
+std::string ControllerNode::matrix3dToString(const Eigen::Matrix3d &matrix) {
+    std::ostringstream oss;
+    for (int i = 0; i < 3; ++i) {
+        oss << "[ ";
+        for (int j = 0; j < 3; ++j) {
+            oss << matrix(i, j) << " ";
+        }
+        oss << "]\n";
+    }
+    return oss.str();
+}
+
+
 
 void ControllerNode::arm()
 {
@@ -311,9 +320,6 @@ void ControllerNode::vehicleStatusCallback(const px4_msgs::msg::VehicleStatus::S
 
 void ControllerNode::publishActuatorMotorsMsg(const Eigen::VectorXd &throttles, const Eigen::VectorXd &alpha_angle)
 {
-    // Lockstep should be disabled from PX4 and from the model.sdf file
-    // direct motor throttles control
-    // Prepare msg
     px4_msgs::msg::ActuatorMotors actuator_motors_msg;
     actuator_motors_msg.control = {(float)throttles[0], (float)throttles[1], (float)throttles[2], (float)throttles[3],
                                    std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"),
@@ -333,7 +339,7 @@ void ControllerNode::publishActuatorMotorsMsg(const Eigen::VectorXd &throttles, 
     actuator_servos_publisher_->publish(actuator_servos_msg);
 
     RCLCPP_INFO(this->get_logger(), "Servo : %f    %f    %f    %f ", alpha_angle[0], alpha_angle[1], alpha_angle[2], alpha_angle[3]);
-    RCLCPP_INFO(this->get_logger(), "Motor : %f    %f    %f    %f ", throttles[0], throttles[1], throttles[2], throttles[3]);
+    RCLCPP_INFO(this->get_logger(), "Motor : %f    %f    %f    %f \n", throttles[0], throttles[1], throttles[2], throttles[3]);
 }
 
 void ControllerNode::updateControllerOutput()
@@ -347,12 +353,8 @@ void ControllerNode::updateControllerOutput()
     Eigen::Vector4d normalized_torque_thrust;
     Eigen::VectorXd throttles;
     Eigen::VectorXd alpha_angle;
-    // if (in_sitl_mode_)
     px4InverseSITL(&alpha_angle, &throttles, &controller_output);
-    // else
-    //     px4Inverse(&normalized_torque_thrust, &throttles, &controller_output);
 
-    // Publish the controller output
     if (current_status_.nav_state == px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_OFFBOARD)
     {
 

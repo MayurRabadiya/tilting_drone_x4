@@ -121,6 +121,19 @@ public:
         return rotationMatrix;
     }
 
+
+    // Debuge Errors
+    Eigen::Vector3d _e_p;
+    Eigen::Vector3d _r_p;
+    Eigen::Vector3d _r_p_g;
+
+    Eigen::Matrix3d _e_R_matrix;
+        
+    Eigen::Vector3d _e_R;
+    Eigen::Vector3d _r_R;
+
+
+
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
     // UAV Parameter
@@ -146,6 +159,8 @@ private:
     // References
     Eigen::Vector3d position_d_;
     Eigen::Matrix3d R_d;
+
+
 };
 
 #endif // CONTROLLER_CONTROLLER_H

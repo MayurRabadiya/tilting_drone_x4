@@ -54,6 +54,7 @@
 #include <trajectory_msgs/msg/multi_dof_joint_trajectory_point.hpp>
 
 #include <string>
+#include <sstream>
 
 #include "tilting_drone_x4/controller.h"
 
@@ -121,13 +122,11 @@ private:
 
     // // Logic switches
     int control_mode_;
-    // bool in_sitl_mode_;
 
     px4_msgs::msg::VehicleStatus current_status_;
     bool connected_ = false;
 
     void loadParams();
-    // void secureConnection();
     void arm();
     void disarm();
 
@@ -143,9 +142,9 @@ private:
     void publishOffboardControlModeMsg();
     void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0);
 
-    // void compute_ControlAllocation_and_ActuatorEffect_matrices();
-    // void px4Inverse (Eigen::Vector4d *normalized_torque_and_thrust, Eigen::VectorXd *throttles, const Eigen::VectorXd *wrench);
+
     void px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorXd *throttles, const Eigen::VectorXd *wrench);
+    std::string matrix3dToString(const Eigen::Matrix3d &matrix);
 
     inline void _setArmAngle(const Eigen::Vector4d &alpha_angle_)
     {
