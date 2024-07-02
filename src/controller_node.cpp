@@ -150,16 +150,13 @@ void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorX
     Eigen::VectorXd ones_temp;
 
     Eigen::MatrixXd mixing_matrix(8, 6);
-    Eigen::MatrixXd mixing_matrix_(6, 8);
 
-    const double p = 0.70710678118;  // sqrt(2)/2
-    const double l = 0.18560;        // rotor arm length
+    const double p = 0.70710678118; // sqrt(2)/2
+    const double l = 0.18560;       // rotor arm length
 
-
-    const double kt = 4.23e-06;  // drage constant
-    const double kf = 0.0026;    // force constant
+    const double kt = 4.23e-06; // drage constant
+    const double kf = 0.0026;   // force constant
     const double k = kt / kf;
-
 
     mixing_matrix << 1.0 / (4 * p), -1.0 / (4 * p), 0.0, 0.0, 0.0, -std::abs(l) * std::abs(l) / (4.0 * l * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
         k / (4.0 * l * p), -k / (4.0 * l * p), 1.0 / 4.0, 1.0 / (4.0 * l * p), -1.0 / (4.0 * l * p), -std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
@@ -187,43 +184,38 @@ void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorX
 
     throttles->resize(4);
     *throttles << T1, T2, T3, T4;
-    *throttles /= _input_scaling;   // PX4 only accepts motor input in range 0 to 1
+    *throttles /= _input_scaling; // PX4 only accepts motor input in range 0 to 1
 
     alpha_angle->resize(4);
 
     *alpha_angle << alpha1, alpha2, alpha3, alpha4;
-    *alpha_angle /= 3.1415926536;  // PX4 only accepts servo motor input in range -1 to 1
-
-    
+    *alpha_angle /= 3.1415926536; // PX4 only accepts servo motor input in range -1 to 1
 
     RCLCPP_INFO(this->get_logger(), "e_p    : %f    %f    %f", controller_._e_p[0], controller_._e_p[1], controller_._e_p[2]);
     RCLCPP_INFO(this->get_logger(), "r_p    : %f    %f    %f", controller_._r_p[0], controller_._r_p[1], controller_._r_p[2]);
     RCLCPP_INFO(this->get_logger(), "r_p_g  : %f    %f    %f", controller_._r_p_g[0], controller_._r_p_g[1], controller_._r_p_g[2]);
     RCLCPP_INFO(this->get_logger(), "e_R    : %f    %f    %f", controller_._e_R[0], controller_._e_R[1], controller_._e_R[2]);
     RCLCPP_INFO(this->get_logger(), "r_R    : %f    %f    %f", controller_._r_R[0], controller_._r_R[1], controller_._r_R[2]);
-
-     
     RCLCPP_INFO(this->get_logger(), "e_R_matrix  :  \n%s", matrix3dToString(controller_._e_R_matrix).c_str());
 
     RCLCPP_INFO(this->get_logger(), "Thrust : %f    %f    %f", t_T[0], t_T[1], t_T[2]);
     RCLCPP_INFO(this->get_logger(), "Torque : %f    %f    %f", t_T[3], t_T[4], t_T[5]);
 }
 
-
-
-std::string ControllerNode::matrix3dToString(const Eigen::Matrix3d &matrix) {
+std::string ControllerNode::matrix3dToString(const Eigen::Matrix3d &matrix)
+{
     std::ostringstream oss;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; ++i)
+    {
         oss << "[ ";
-        for (int j = 0; j < 3; ++j) {
+        for (int j = 0; j < 3; ++j)
+        {
             oss << matrix(i, j) << " ";
         }
         oss << "]\n";
     }
     return oss.str();
 }
-
-
 
 void ControllerNode::arm()
 {
@@ -333,9 +325,15 @@ void ControllerNode::publishActuatorMotorsMsg(const Eigen::VectorXd &throttles, 
     px4_msgs::msg::ActuatorServos actuator_servos_msg;
     actuator_servos_msg.timestamp = this->get_clock()->make_shared()->now().nanoseconds() / 1000;
 
-    if(servo_enable){actuator_servos_msg.control = {(float)alpha_angle[0], (float)alpha_angle[1], (float)alpha_angle[2], (float)alpha_angle[3], 0.0, 0.0, 0.0, 0.0};}
-    else{actuator_servos_msg.control = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};}
-    
+    if (servo_enable)
+    {
+        actuator_servos_msg.control = {(float)alpha_angle[0], (float)alpha_angle[1], (float)alpha_angle[2], (float)alpha_angle[3], 0.0, 0.0, 0.0, 0.0};
+    }
+    else
+    {
+        actuator_servos_msg.control = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    }
+
     actuator_servos_publisher_->publish(actuator_servos_msg);
 
     RCLCPP_INFO(this->get_logger(), "Servo : %f    %f    %f    %f ", alpha_angle[0], alpha_angle[1], alpha_angle[2], alpha_angle[3]);

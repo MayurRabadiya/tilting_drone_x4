@@ -172,7 +172,7 @@ private:
         return vec_out;
     }
 
-    inline Eigen::Quaterniond rotateQuaternionFromToENU_NED(const Eigen::Quaterniond &quat_in)
+    inline Eigen::Quaterniond rotateQuaterniondromToENU_NED(const Eigen::Quaterniond &quat_in)
     {
         // Transform from orientation represented in ROS format to PX4 format and back
         //  * Two steps conversion:
@@ -204,7 +204,7 @@ private:
         position_m = rotateVectorFromToENU_NED(Eigen::Vector3d(msg->position[0], msg->position[1], msg->position[2]));
 
         Eigen::Quaterniond quaternion(msg->q[0], msg->q[1], msg->q[2], msg->q[3]);
-        orientation_m = rotateQuaternionFromToENU_NED(quaternion);
+        orientation_m = rotateQuaterniondromToENU_NED(quaternion);
 
         velocity_m = rotateVectorFromToENU_NED(Eigen::Vector3d(msg->velocity[0], msg->velocity[1], msg->velocity[2]));
 

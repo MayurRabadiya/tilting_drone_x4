@@ -46,29 +46,35 @@ public:
     // Setters
     void setOdometry(const Eigen::Vector3d &position_m, const Eigen::Quaterniond &orientation_m, const Eigen::Vector3d &velocity_m, const Eigen::Vector3d &angular_velocity_m)
     {
+        Q_m = orientation_m;
+        orientation_m.normalized();
         R_m = orientation_m.matrix();
         position_m_ = position_m;
-        velocity_m_ = R_m * velocity_m;
+        velocity_m_ = velocity_m;
         angular_velocity_m_ = angular_velocity_m;
     }
 
+    void setDesiredPose(const Eigen::Vector3d &position_d, const Eigen::Vector3d &orientation_d)
+    {
+        position_d_ = position_d;
+        R_d = eulerAnglesToRotationMatrix(orientation_d(0), orientation_d(1), orientation_d(2)); //(roll, pitch, yaw)
+        Q_d = eulerAnglesToQuaternion(orientation_d(0), orientation_d(1), orientation_d(2));     //(roll, pitch, yaw)
+    }
+
+    // Not Used yet
     void setTrajectoryPoint(const Eigen::Vector3d &position_d, const Eigen::Quaterniond &orientation_d)
     {
         position_d_ = position_d;
         R_d = orientation_d.matrix();
     }
 
-    void setDesiredPose(const Eigen::Vector3d &position_d, const Eigen::Vector3d &orientation_d)
-    {
-        position_d_ = position_d;
-        R_d = eulerAnglesToRotationMatrix(orientation_d(0), orientation_d(1), orientation_d(2));   //(roll, pitch, yaw)
-    }
-
+    // Not used yet
     void setArmAngle(const Eigen::Vector4d &alpha_angle)
     {
         alpha_angle_ = alpha_angle;
     }
 
+    // Not used yet
     void setActuatorThrust(const Eigen::Vector4d &actuator_thrust)
     {
         actuator_thrust_ = actuator_thrust;
@@ -117,22 +123,29 @@ public:
         Eigen::AngleAxisd yawAngle(yaw, Eigen::Vector3d::UnitZ());
 
         Eigen::Quaterniond q = rollAngle * pitchAngle * yawAngle;
+        q.normalized();
         Eigen::Matrix3d rotationMatrix = q.matrix();
         return rotationMatrix;
     }
 
+    // Function to convert roll, pitch, yaw to a Quaternion using Eigen
+    Eigen::Quaterniond eulerAnglesToQuaternion(double roll, double pitch, double yaw)
+    {
+        Eigen::AngleAxisd rollAngle(roll, Eigen::Vector3d::UnitX());
+        Eigen::AngleAxisd pitchAngle(pitch, Eigen::Vector3d::UnitY());
+        Eigen::AngleAxisd yawAngle(yaw, Eigen::Vector3d::UnitZ());
+
+        Eigen::Quaterniond q = rollAngle * pitchAngle * yawAngle;
+        return q;
+    }
 
     // Debuge Errors
     Eigen::Vector3d _e_p;
     Eigen::Vector3d _r_p;
     Eigen::Vector3d _r_p_g;
-
-    Eigen::Matrix3d _e_R_matrix;
-        
     Eigen::Vector3d _e_R;
     Eigen::Vector3d _r_R;
-
-
+    Eigen::Matrix3d _e_R_matrix;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
@@ -144,7 +157,7 @@ private:
     Eigen::Vector4d actuator_thrust_;
     Eigen::Vector4d alpha_angle_;
 
-    // Lee Controller Gains
+    // Controller Gains
     Eigen::Vector3d position_gain_;
     Eigen::Vector3d velocity_gain_;
     Eigen::Vector3d attitude_gain_;
@@ -156,11 +169,12 @@ private:
     Eigen::Matrix3d R_m;
     Eigen::Vector3d angular_velocity_m_;
 
-    // References
+    // References (desired from user)
     Eigen::Vector3d position_d_;
     Eigen::Matrix3d R_d;
 
-
+    Eigen::Quaterniond Q_m; // Measured Qaternion from Drone (Current Orientation)
+    Eigen::Quaterniond Q_d; // desired Quaternion from user
 };
 
 #endif // CONTROLLER_CONTROLLER_H

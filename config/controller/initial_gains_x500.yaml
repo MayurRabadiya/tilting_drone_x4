@@ -1,21 +1,21 @@
 /**:
   ros__parameters:
     control_gains:
-        K_p_x: 0.0
-        K_p_y: 0.0
+        K_p_x: 0.5
+        K_p_y: 0.5
         K_p_z: 0.5
-        K_v_x: 0.0
-        K_v_y: 0.0
-        K_v_z: 0.0
+        K_v_x: 0.5
+        K_v_y: 0.5
+        K_v_z: 0.5
         K_R_x: 0.5
         K_R_y: 0.5
         K_R_z: 0.5
-        K_w_x: 0.02
-        K_w_y: 0.02
-        K_w_z: 0.02
+        K_w_x: 1.02
+        K_w_y: 1.02
+        K_w_z: 1.02
         position_x: 0.0   # in meter (m)   
         position_y: 0.0   # in meter (m)
-        position_z: 1.5   # in meter (m)
+        position_z: 5.5   # in meter (m)
         eular_roll : 0.0  # angle in radian (rad)
         eular_pitch: 0.0  # angle in radian (rad)
         eular_yaw  : 0.0  # angle in radian (rad)

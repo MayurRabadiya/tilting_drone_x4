@@ -9,6 +9,7 @@ endif()
 # Find ROS 2 dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclpy REQUIRED)
+# find_package(mathlib REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -16,6 +17,7 @@ find_package(std_msgs REQUIRED)
 find_package(px4_msgs REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
+
 
 # Specify additional locations of header files
 include_directories(include ${EIGEN3_INCLUDE_DIR})  # Use EIGEN3_INCLUDE_DIR instead of EIGEN3_DIR
