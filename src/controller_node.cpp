@@ -123,15 +123,13 @@ void ControllerNode::loadParams()
     this->declare_parameter("control_gains.eular_pitch", 0.0);
     this->declare_parameter("control_gains.eular_yaw", 0.0);
 
-    position_des_ << this->get_parameter("control_gains.K_R_x").as_double(),
-        this->get_parameter("control_gains.position_x").as_double(),
-        this->get_parameter("control_gains.position_y").as_double();
+    position_des_ << this-> this->get_parameter("control_gains.position_x").as_double(),
+        this->get_parameter("control_gains.position_y").as_double(),
     this->get_parameter("control_gains.position_z").as_double();
 
-    eular_des_ << this->get_parameter("control_gains.K_w_x").as_double(),
-        this->get_parameter("control_gains.eular_roll").as_double(),
-        this->get_parameter("control_gains.eular_pitch").as_double();
-    this->get_parameter("control_gains.eular_yaw").as_double();
+    eular_des_ << this-> this->get_parameter("control_gains.eular_roll").as_double(),
+        this->get_parameter("control_gains.eular_pitch").as_double(),
+        this->get_parameter("control_gains.eular_yaw").as_double();
 
     // pass the UAV Parameters and controller gains to the controller
     controller_.setUavMass(_uav_mass);
