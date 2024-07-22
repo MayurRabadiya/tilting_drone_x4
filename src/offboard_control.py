@@ -13,8 +13,11 @@ from px4_msgs.msg import ActuatorServos
 from px4_msgs.msg import ActuatorMotors
 from px4_msgs.msg import VehicleOdometry
 from px4_msgs.msg import VehicleControlMode
+from px4_msgs.msg import VehicleAttitudeSetpoint
+from px4_msgs.msg import TiltingDroneX4AttitudeSetpoint
 
-from px4_msgs.msg import TiltingMcDesiredAngles
+
+# from px4_msgs.msg import TiltingMcDesiredAngles
 
 
 from rcl_interfaces.msg import SetParametersResult
@@ -54,8 +57,11 @@ class OffboardControl(Node):
         self.trajectory_setpoint_publisher = self.create_publisher(
             TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile)
 
-        self.tilting_mc_desired_angles_pub = self.create_publisher(
-            TiltingMcDesiredAngles, '/fmu/in/tilting_mc_desired_angles', qos_profile)
+        self.vehicle_attitude_publisher = self.create_publisher(
+            VehicleAttitudeSetpoint, '/fmu/in/vehicle_attitude_setpoint', qos_profile)
+
+        self.tilting_drone_x4_attitude_setpoint_pub = self.create_publisher(
+            TiltingDroneX4AttitudeSetpoint, '/fmu/in/tilting_drone_x4_attitude_setpoint', qos_profile)
 
         self.vehicle_command_publisher = self.create_publisher(
             VehicleCommand, '/fmu/in/vehicle_command', qos_profile)
@@ -103,8 +109,8 @@ class OffboardControl(Node):
         ]
 
         # Register signal handlers for safe shutdown
-        signal.signal(signal.SIGINT, self.shutdown_handler)
-        signal.signal(signal.SIGTERM, self.shutdown_handler)
+        # signal.signal(signal.SIGINT, self.shutdown_handler)
+        # signal.signal(signal.SIGTERM, self.shutdown_handler)
 
     def vehicle_odometry_callback(self, odom_msgs):
         self.position_w = odom_msgs.position
@@ -169,14 +175,14 @@ class OffboardControl(Node):
         self.get_logger().info(f"Servo_angle: {self.arm_angle}")
         msg = ActuatorServos()
         msg.control = [(self.arm_angle / 90), -(self.arm_angle / 90), -
-                       (self.arm_angle / 90), (self.arm_angle / 90), 1.0, 1.0, 1.0, 1.0]
+                       (self.arm_angle / 90), (self.arm_angle / 90), 0.0, 0.0, 0.0, 0.0]
         msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.offboard_servo_control.publish(msg)
 
-        tilt = TiltingMcDesiredAngles()
-        tilt.timestamp = int(Clock().now().nanoseconds / 1000)
-        tilt.pitch_body = 10.0
-        tilt.roll_body = 10.0
+        # tilt = TiltingMcDesiredAngles()
+        # tilt.timestamp = int(Clock().now().nanoseconds / 1000)
+        # tilt.pitch_body = 10.0
+        # tilt.roll_body = 10.0
         # self.tilting_mc_desired_angles_pub.publish(tilt)
 
     def arm(self):
@@ -208,9 +214,21 @@ class OffboardControl(Node):
         """Publish the trajectory setpoint."""
         msg = TrajectorySetpoint()
         msg.position = [x, y, z]
-        # msg.yaw = 1.57079  # (90 degree)
+        # msg.yaw = 0.0      # (90 degree)
         msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
+
+
+        att_msg = TiltingDroneX4AttitudeSetpoint()
+        att_msg.q = [1.0, 0.0, 0.0, 0.0]
+        att_msg.timestamp = int(Clock().now().nanoseconds / 1000)
+        self.tilting_drone_x4_attitude_setpoint_pub.publish(att_msg)
+
+        # att_msg = VehicleAttitudeSetpoint()
+        # att_msg.q_d = [1.0, 0.0, 0.0, 0.0]
+        # att_msg.timestamp = int(Clock().now().nanoseconds / 1000)
+        # self.vehicle_attitude_publisher.publish(att_msg)
+
         self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
 
     def publish_vehicle_command(self, command, **params) -> None:
@@ -372,7 +390,7 @@ class OffboardControl(Node):
         #     self.offboard_setpoint_counter += 1
 
         if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-            self.rotor_arm()  # Use the arm_angle parameter
+            # self.rotor_arm()  # Use the arm_angle parameter
             # self.infinity_traj()
             # self.square_traj()
             # self.circular_traj()
