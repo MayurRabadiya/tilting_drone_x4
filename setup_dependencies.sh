@@ -71,7 +71,7 @@ fi
 # Clone px4_msgs if not already done
 if [ ! -d "$PX4_MSGS_DIR" ]; then
     print_info "Cloning px4_msgs into --> $PX4_MSGS_DIR..."
-    git clone "https://github.com/PX4/px4_msgs.git" "$PX4_MSGS_DIR" || { print_error "Failed to clone px4_msgs"; exit 1; }
+    git clone "https://github.com/MayurRabadiya/px4_msgs.git" "$PX4_MSGS_DIR" || { print_error "Failed to clone px4_msgs"; exit 1; }
 else
     print_info "px4_msgs already exists."
 fi
