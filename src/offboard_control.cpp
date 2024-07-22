@@ -42,6 +42,7 @@
 #include <px4_msgs/msg/trajectory_setpoint.hpp>
 #include <px4_msgs/msg/vehicle_command.hpp>
 #include <px4_msgs/msg/vehicle_control_mode.hpp>
+#include <px4_msgs/msg/tilting_drone_x4_attitude_setpoint.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <stdint.h>
 
@@ -61,6 +62,8 @@ public:
 		offboard_control_mode_publisher_ = this->create_publisher<OffboardControlMode>("/fmu/in/offboard_control_mode", 10);
 		trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>("/fmu/in/trajectory_setpoint", 10);
 		vehicle_command_publisher_ = this->create_publisher<VehicleCommand>("/fmu/in/vehicle_command", 10);
+		attitude_setpoint_publisher_ = this->create_publisher<TiltingDroneX4AttitudeSetpoint>("/fmu/in/tilting_drone_x4_attitude_setpoint", 10);
+
 
 		offboard_setpoint_counter_ = 0;
 
@@ -95,6 +98,8 @@ private:
 	rclcpp::Publisher<OffboardControlMode>::SharedPtr offboard_control_mode_publisher_;
 	rclcpp::Publisher<TrajectorySetpoint>::SharedPtr trajectory_setpoint_publisher_;
 	rclcpp::Publisher<VehicleCommand>::SharedPtr vehicle_command_publisher_;
+	rclcpp::Publisher<TiltingDroneX4AttitudeSetpoint>::SharedPtr attitude_setpoint_publisher_;
+
 
 	std::atomic<uint64_t> timestamp_;   //!< common synced timestamped
 
@@ -153,6 +158,11 @@ void OffboardControl::publish_trajectory_setpoint()
 	msg.yaw = -3.14; // [-PI:PI]
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
 	trajectory_setpoint_publisher_->publish(msg);
+
+	TiltingDroneX4AttitudeSetpoint att_msg{};
+	att_msg.q = {1.0, 0.0, 0.0, 0.0};
+	att_msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+	attitude_setpoint_publisher_->publish(att_msg);
 }
 
 /**
