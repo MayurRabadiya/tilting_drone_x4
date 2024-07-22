@@ -1,5 +1,6 @@
 #include "tilting_drone_x4/controller_node.h"
 
+
 ControllerNode::ControllerNode()
     : Node("controller_node")
 {
@@ -22,6 +23,10 @@ ControllerNode::ControllerNode()
     actuator_servos_publisher_ = this->create_publisher<px4_msgs::msg::ActuatorServos>("/fmu/in/actuator_servos", 10);
     offboard_control_mode_publisher_ = this->create_publisher<px4_msgs::msg::OffboardControlMode>("/fmu/in/offboard_control_mode", 10);
     vehicle_command_publisher_ = this->create_publisher<px4_msgs::msg::VehicleCommand>("/fmu/in/vehicle_command", 10);
+
+    thrust_publisher_ = this->create_publisher<std_msgs::msg::Float32MultiArray>("/drone_x4/thrust", 10);
+    torque_publisher_ = this->create_publisher<std_msgs::msg::Float32MultiArray>("/drone_x4/torque", 10);
+
 
     // Parameters subscriber
     callback_handle_ = this->add_on_set_parameters_callback(
@@ -123,13 +128,14 @@ void ControllerNode::loadParams()
     this->declare_parameter("control_gains.eular_pitch", 0.0);
     this->declare_parameter("control_gains.eular_yaw", 0.0);
 
-    position_des_ << this-> this->get_parameter("control_gains.position_x").as_double(),
+    position_des_ << this->get_parameter("control_gains.position_x").as_double(),
         this->get_parameter("control_gains.position_y").as_double(),
-    this->get_parameter("control_gains.position_z").as_double();
+        this->get_parameter("control_gains.position_z").as_double();
 
-    eular_des_ << this-> this->get_parameter("control_gains.eular_roll").as_double(),
+    eular_des_ << this->get_parameter("control_gains.eular_roll").as_double(),
         this->get_parameter("control_gains.eular_pitch").as_double(),
         this->get_parameter("control_gains.eular_yaw").as_double();
+
 
     // pass the UAV Parameters and controller gains to the controller
     controller_.setUavMass(_uav_mass);
@@ -151,19 +157,38 @@ void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorX
 
     const double p = 0.70710678118; // sqrt(2)/2
     const double l = 0.18560;       // rotor arm length
+    // const double l = 0.26;       // rotor arm length
 
-    const double kt = 4.23e-06; // drage constant
-    const double kf = 0.0026;   // force constant
+    const double kt = 4.9713e-05; // drage constant
+    const double kf = 0.00305;   // force constant
     const double k = kt / kf;
+    // const double k = 1.1765e-038;
 
-    mixing_matrix << 1.0 / (4 * p), -1.0 / (4 * p), 0.0, 0.0, 0.0, -std::abs(l) * std::abs(l) / (4.0 * l * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
-        k / (4.0 * l * p), -k / (4.0 * l * p), 1.0 / 4.0, 1.0 / (4.0 * l * p), -1.0 / (4.0 * l * p), -std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
-        1.0 / (4 * p), 1.0 / (4 * p), 0.0, 0.0, 0.0, -std::abs(l) * std::abs(l) / (4.0 * l * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
-        -k / (4.0 * l * p), -k / (4.0 * l * p), 1.0 / 4.0, 1.0 / (4.0 * l * p), 1.0 / (4.0 * l * p), std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
-        -1.0 / (4 * p), 1.0 / (4 * p), 0.0, 0.0, 0.0, -std::abs(l) * std::abs(l) / (4.0 * l * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
-        -k / (4.0 * l * p), k / (4.0 * l * p), 1.0 / 4.0, -1.0 / (4.0 * l * p), 1.0 / (4.0 * l * p), -std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
-        -1.0 / (4 * p), -1.0 / (4 * p), 0.0, 0.0, 0.0, -std::abs(l) * std::abs(l) / (4.0 * l * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
-        k / (4.0 * l * p), k / (4.0 * l * p), 1.0 / 4.0, -1.0 / (4.0 * l * p), -1.0 / (4.0 * l * p), std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l)));
+    mixing_matrix << 1.0 / (4 * p),      -1.0 / (4 * p),     0.0,        0.0,                   0.0,                  std::abs(l) * std::abs(l) / (4.0 * l * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
+                     k / (4.0 * l * p),  -k / (4.0 * l * p), 1.0 / 4.0, -1.0 / (4.0 * l * p),   1.0 / (4.0 * l * p),  std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
+                     1.0 / (4 * p),       1.0 / (4 * p),     0.0,        0.0,                   0.0,                  std::abs(l) * std::abs(l) / (4.0 * l * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
+                     -k / (4.0 * l * p), -k / (4.0 * l * p), 1.0 / 4.0, -1.0 / (4.0 * l * p),  -1.0 / (4.0 * l * p), -std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
+                     -1.0 / (4 * p),      1.0 / (4 * p),     0.0,        0.0,                   0.0,                  std::abs(l) * std::abs(l) / (4.0 * l * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
+                     -k / (4.0 * l * p),  k / (4.0 * l * p), 1.0 / 4.0,  1.0 / (4.0 * l * p),  -1.0 / (4.0 * l * p),  std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
+                     -1.0 / (4 * p),     -1.0 / (4 * p),     0.0,        0.0,                   0.0,                  std::abs(l) * std::abs(l) / (4.0 * l * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l))),
+                     k / (4.0 * l * p),   k / (4.0 * l * p), 1.0 / 4.0,  1.0 / (4.0 * l * p),   1.0 / (4.0 * l * p), -std::abs(k) * std::abs(k) / (4.0 * k * (std::abs(k) * std::abs(k) + std::abs(l) * std::abs(l)));
+
+
+//     double l = 0.183; // rotor arm length
+// 	double p = sqrt(2.0);
+// 	double kf = 0.000026; // force constant
+// 	double alpha = kf / l;
+// 	double beta = 1.0 / (2 * l * l + kf * kf);
+
+// mixing_matrix << -alpha, -alpha, 1.0, -1.0 / l, -1.0 / l, -kf * beta,
+// 		-p, -p, 0.0, 0.0, 0.0, -p * l * beta,
+// 		-alpha, alpha, 1.0, 1.0 / l, -1.0 / l, kf * beta,
+// 		p, -p, 0.0, 0.0, 0.0, -p * l * beta,
+// 		alpha, alpha, 1.0, 1.0 / l, 1.0 / l, -kf * beta,
+// 		p, p, 0.0, 0.0, 0.0, -p * l * beta,
+// 		alpha, -alpha, 1.0, -1.0 / l, 1.0 / l, kf * beta,
+// 		-p, p, 0.0, 0.0, 0.0, -p * l * beta;
+
 
     Eigen::VectorXd result = mixing_matrix * (*wrench);
     Eigen::VectorXd t_T = *wrench;
@@ -198,6 +223,18 @@ void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorX
 
     RCLCPP_INFO(this->get_logger(), "Thrust : %f    %f    %f", t_T[0], t_T[1], t_T[2]);
     RCLCPP_INFO(this->get_logger(), "Torque : %f    %f    %f", t_T[3], t_T[4], t_T[5]);
+
+
+
+    auto thrust_msg = std_msgs::msg::Float32MultiArray();
+    auto torque_msg = std_msgs::msg::Float32MultiArray();
+
+    thrust_msg.data = {float(t_T[0]), float(t_T[1]), float(t_T[2])};
+    torque_msg.data = {float(t_T[3]), float(t_T[4]), float(t_T[5])};
+
+    thrust_publisher_->publish(thrust_msg);
+    torque_publisher_->publish(torque_msg);
+
 }
 
 std::string ControllerNode::matrix3dToString(const Eigen::Matrix3d &matrix)
@@ -265,7 +302,7 @@ void ControllerNode::commandPoseCallback(const geometry_msgs::msg::PoseStamped::
     Eigen::Quaterniond orientation;
     eigenTrajectoryPointFromPoseMsg(pose_msg, position, orientation);
     RCLCPP_INFO_ONCE(get_logger(), "Controller got first command message.");
-    controller_.setTrajectoryPoint(position, orientation); // Send the command to controller_ obj
+    // controller_.setTrajectoryPoint(position, orientation); // Send the command to controller_ obj
 }
 
 void ControllerNode::vehicle_odometryCallback(const px4_msgs::msg::VehicleOdometry::SharedPtr odom_msg)
@@ -325,7 +362,8 @@ void ControllerNode::publishActuatorMotorsMsg(const Eigen::VectorXd &throttles, 
 
     if (servo_enable)
     {
-        actuator_servos_msg.control = {(float)alpha_angle[0], (float)alpha_angle[1], (float)alpha_angle[2], (float)alpha_angle[3], 0.0, 0.0, 0.0, 0.0};
+        // actuator_servos_msg.control = {(float)alpha_angle[0], (float)alpha_angle[1], (float)alpha_angle[2], (float)alpha_angle[3], 0.0, 0.0, 0.0, 0.0};
+        actuator_servos_msg.control = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     }
     else
     {

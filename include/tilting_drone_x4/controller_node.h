@@ -52,6 +52,8 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <trajectory_msgs/msg/multi_dof_joint_trajectory_point.hpp>
+#include <std_msgs/msg/float32_multi_array.hpp>
+
 
 #include <string>
 #include <sstream>
@@ -93,6 +95,8 @@ private:
     rclcpp::Publisher<px4_msgs::msg::VehicleTorqueSetpoint>::SharedPtr torque_setpoint_publisher_;
     rclcpp::Publisher<px4_msgs::msg::OffboardControlMode>::SharedPtr offboard_control_mode_publisher_;
     rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr vehicle_command_publisher_;
+    rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr thrust_publisher_;
+    rclcpp::Publisher<std_msgs::msg::Float32MultiArray>::SharedPtr torque_publisher_;
 
     // Services
     rcl_interfaces::msg::SetParametersResult parametersCallback(const std::vector<rclcpp::Parameter> &parameters);
@@ -211,7 +215,7 @@ private:
         angular_velocity_m = rotateVectorFromToFRD_FLU(Eigen::Vector3d(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]));
     }
 
-   
+
 
     inline void eigenTrajectoryPointFromPoseMsg(
         const geometry_msgs::msg::PoseStamped::SharedPtr &msg, Eigen::Vector3d &position_m, Eigen::Quaterniond &orientation_W_B)
