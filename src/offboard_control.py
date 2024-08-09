@@ -88,6 +88,11 @@ class OffboardControl(Node):
         self.declare_parameter('arm_angle', 0.0)
         self.declare_parameter('t_dt', 0.005)
 
+        self.radius = self.get_parameter('radius').value
+        self.altitude = self.get_parameter('altitude').value
+        self.arm_angle = self.get_parameter('arm_angle').value
+        self.t_dt = self.get_parameter('t_dt').value
+
         self.declare_parameter('r', 0.0)
         self.declare_parameter('p', 0.0)
         self.declare_parameter('y', 0.0)
@@ -96,10 +101,13 @@ class OffboardControl(Node):
         self.p = self.get_parameter('p').value
         self.y = self.get_parameter('y').value
 
-        self.radius = self.get_parameter('radius').value
-        self.altitude = self.get_parameter('altitude').value
-        self.arm_angle = self.get_parameter('arm_angle').value
-        self.t_dt = self.get_parameter('t_dt').value
+        self.declare_parameter('x_pos', 0.0)
+        self.declare_parameter('y_pos', 0.0)
+        self.declare_parameter('z_pos', 5.0)
+
+        self.x_pos = self.get_parameter('x_pos').value
+        self.y_pos = self.get_parameter('y_pos').value
+        self.z_pos = self.get_parameter('z_pos').value
 
         # Create a timer to publish control commands
         self.offboard_timer = self.create_timer(0.02, self.offboard_callback)
@@ -149,6 +157,12 @@ class OffboardControl(Node):
                 self.p = param.value
             elif param.name == 'y':
                 self.y = param.value
+            elif param.name == 'x_pos':
+                self.x_pos = param.value
+            elif param.name == 'y_pos':
+                self.y_pos = param.value
+            elif param.name == 'z_pos':
+                self.z_pos = param.value
         return SetParametersResult(successful=True)
 
     def vehicle_local_position_callback(self, vehicle_local_position):
@@ -242,15 +256,9 @@ class OffboardControl(Node):
         q = r.as_quat()  # Quaternion [x, y, z, w]
 
         att_msg = TiltingDroneX4AttitudeSetpoint()
-        # att_msg.q = [1.0, 0.0, 0.0, 0.0]
         att_msg.q = [q[3], q[0], q[1], q[2]]
         att_msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.tilting_drone_x4_attitude_setpoint_pub.publish(att_msg)
-
-        # att_msg = VehicleAttitudeSetpoint()
-        # att_msg.q_d = [1.0, 0.0, 0.0, 0.0]
-        # att_msg.timestamp = int(Clock().now().nanoseconds / 1000)
-        # self.vehicle_attitude_publisher.publish(att_msg)
 
         self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
 
@@ -417,7 +425,7 @@ class OffboardControl(Node):
             # self.infinity_traj()
             # self.square_traj()
             # self.circular_traj()
-            self.publish_position_setpoint(0.0, 0.0, -self.altitude)
+            self.publish_position_setpoint(self.x_pos, self.y_pos, -self.z_pos)
 
 
 def main(args=None) -> None:
