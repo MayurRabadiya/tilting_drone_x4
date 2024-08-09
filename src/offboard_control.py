@@ -88,6 +88,14 @@ class OffboardControl(Node):
         self.declare_parameter('arm_angle', 0.0)
         self.declare_parameter('t_dt', 0.005)
 
+        self.declare_parameter('r', 0.0)
+        self.declare_parameter('p', 0.0)
+        self.declare_parameter('y', 0.0)
+
+        self.r = self.get_parameter('r').value
+        self.p = self.get_parameter('p').value
+        self.y = self.get_parameter('y').value
+
         self.radius = self.get_parameter('radius').value
         self.altitude = self.get_parameter('altitude').value
         self.arm_angle = self.get_parameter('arm_angle').value
@@ -135,6 +143,12 @@ class OffboardControl(Node):
                 self.radius = param.value
             elif param.name == 't_dt':
                 self.t_dt = param.value
+            elif param.name == 'r':
+                self.r = param.value
+            elif param.name == 'p':
+                self.p = param.value
+            elif param.name == 'y':
+                self.y = param.value
         return SetParametersResult(successful=True)
 
     def vehicle_local_position_callback(self, vehicle_local_position):
@@ -210,17 +224,26 @@ class OffboardControl(Node):
         vcm.flag_control_altitude_enabled = False
         self.VehicleControlMode_pub.publish(vcm)
 
+
     def publish_position_setpoint(self, x: float, y: float, z: float):
         """Publish the trajectory setpoint."""
         msg = TrajectorySetpoint()
         msg.position = [x, y, z]
-        # msg.yaw = 0.0      # (90 degree)
+        msg.yaw = 0.0    # (90 degree)
         msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
 
+        roll = np.radians(self.r)
+        pitch = np.radians(self.p)
+        yaw = np.radians(self.y)
+
+
+        r = R.from_euler('xyz', [roll, pitch, yaw], degrees=False)
+        q = r.as_quat()  # Quaternion [x, y, z, w]
 
         att_msg = TiltingDroneX4AttitudeSetpoint()
-        att_msg.q = [1.0, 0.0, 0.0, 0.0]
+        # att_msg.q = [1.0, 0.0, 0.0, 0.0]
+        att_msg.q = [q[3], q[0], q[1], q[2]]
         att_msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.tilting_drone_x4_attitude_setpoint_pub.publish(att_msg)
 
