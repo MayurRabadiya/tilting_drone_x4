@@ -60,6 +60,9 @@ class OffboardControl(Node):
         self.altitude = self.get_parameter('altitude').value
         self.t_dt = self.get_parameter('t_dt').value
 
+        self.declare_parameter('mode', 0)
+        self.mode = self.get_parameter('mode').value
+
         self.declare_parameter('r', 0.0)
         self.declare_parameter('p', 0.0)
         self.declare_parameter('y', 0.0)
@@ -116,7 +119,15 @@ class OffboardControl(Node):
                 self.y_pos = param.value
             elif param.name == 'z_pos':
                 self.z_pos = param.value
+            elif param.name == 'mode':
+                self.mode = param.value
+                self.mode_print()
         return SetParametersResult(successful=True)
+
+    def mode_print(self):
+        if self.mode == 0: self.get_logger().info("Switched to Manual mode...")
+        elif self.mode == 1: self.get_logger().info("Switched to Infinity shape trajectory mode...")
+        elif self.mode == 2: self.get_logger().info("Switched to Circular shape trajectory mode...")
 
     def vehicle_local_position_callback(self, vehicle_local_position):
         """Callback function for vehicle_local_position topic subscriber."""
@@ -173,7 +184,7 @@ class OffboardControl(Node):
         msg.position = [x, y, z]
         msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
-        self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
+        # self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
 
     def publish_attitude_setpoint(self, r: float, p: float, y: float):
         roll = np.radians(self.r)
@@ -187,7 +198,7 @@ class OffboardControl(Node):
         att_msg.q = [q[3], q[0], q[1], q[2]]
         att_msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.tilting_drone_x4_attitude_setpoint_pub.publish(att_msg)
-        self.get_logger().info(f"Publishing attitude setpoints {[r, p, y]}\n")
+        # self.get_logger().info(f"Publishing attitude setpoints {[r, p, y]}\n")
 
 
     def publish_vehicle_command(self, command, **params) -> None:
@@ -293,16 +304,20 @@ class OffboardControl(Node):
         att_msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.tilting_drone_x4_attitude_setpoint_pub.publish(att_msg)
 
-
     def timer_callback(self) -> None:
         """Callback function for the timer."""
         self.publish_offboard_control_heartbeat_signal()
 
         if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-            self.infinity_traj()
-            # self.circular_traj()
-            # self.publish_position_setpoint(self.x_pos, self.y_pos, -self.z_pos)
-            # self.publish_attitude_setpoint(self.r, self.p, self.y)
+            if self.mode == 1: self.infinity_traj()
+            elif self.mode == 2: self.circular_traj()
+            elif self.mode == 0:
+                self.publish_position_setpoint(self.x_pos, self.y_pos, -self.z_pos)
+                self.publish_attitude_setpoint(self.r, self.p, self.y)
+            else:
+                self.publish_position_setpoint(self.x_pos, self.y_pos, -self.z_pos)
+                self.publish_attitude_setpoint(self.r, self.p, self.y)
+
 
 def main(args=None) -> None:
     print('Starting offboard control node...')

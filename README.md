@@ -2,10 +2,11 @@
 # tilting_drone_x4
 
 This repository contains a simulation model of a tilting arm quadcopter and a controller to control the drone. The model is based on PX4-Autopilot SITL.
+The controller is implemeted inside the PX4-Autopilot firmware at low-level.
 
 ## Minimum Requirements
 - ROS Humble
-- Gazebo Garden
+- Gazebo Garden/Harmonic
 - Ubuntu 22.04
 
 ## ROS2 & GAZEBO Garden Installation
@@ -50,8 +51,6 @@ Or you can refer this page:
 [GAZEBO garden](https://gazebosim.org/docs/garden/install_ubuntu).
 
 
-    
-
 ## Setup Instructions
 
 ### Clone the Repository
@@ -65,6 +64,7 @@ git clone https://github.com/MayurRabadiya/tilting_drone_x4.git
 ```
 
 ### Setup Dependencies
+
 ```bash
 cd tilting_drone_x4
 sh setup_dependencies.sh
@@ -77,7 +77,7 @@ This process will take some time. Once the setup is complete, the workspace stru
     │   └── src
     │       ├── tilting_drone_x4
     │       └── px4_msgs
-    ├── PX4-Autopilot
+    ├── drone_x4_px4
     └── Micro-XRCE-DDS-Agent
 
 ## Running the Simulation
@@ -92,43 +92,43 @@ source install/local_setup.bash
 ### Launch the Simulation
 To run the tilting_drone_x4 simulation, execute the following command:
 ```bash
-ros2 launch tilting_drone_x4 drone.launch.py
+ros2 launch tilting_drone_x4 drone_x4.launch.py
 ```
 
-If you want to run another PX4-Autopilot SITL, use:
+### Modes
+Mode 0: Manual mode. Control drone_x4 with manual input from parameter server.   <br/>
+Mode 1: Infinity shape trajectory tracking. <br/>
+Mode 2: Circular shape trajectory tracking.
+
 ```bash
-ros2 launch tilting_drone_x4 drone.launch.py drone_type:=gz_x500
+ros2 param set /tilting_drone_x4/Drone_X4_Node mode 1
 
 ```
-
-### Run Offboard-mode Example
+Manual mode controls: <br/>
+Postion:
 ```bash
-ros2 run tilting_drone_x4 offboard_control.py
+ros2 param set /tilting_drone_x4/Drone_X4_Node x_pos 5.0
+ros2 param set /tilting_drone_x4/Drone_X4_Node y_pos 5.0
+ros2 param set /tilting_drone_x4/Drone_X4_Node z_pos 5.0
 
 ```
-To change the servo motor (rotor arm) angle:
+Atittude:
 ```bash
-ros2 param set /Drone_X4_Node arm_angle 30.0
-```
-
-### Run controller node
-```bash
-ros2 launch tilting_drone_x4 tilt_drone.launch.py
+ros2 param set /tilting_drone_x4/Drone_X4_Node r 90.0
+ros2 param set /tilting_drone_x4/Drone_X4_Node p 0.0
+ros2 param set /tilting_drone_x4/Drone_X4_Node y 0.0
 
 ```
-### TO edit gains:
+
+### To edit gains:
 ```bash
-tilting_drone_x4/config/controller/initial_gains_x500.yaml
+workspace/drone_x4_px4/ROMFS/px4fmu_common/init.d-posix/airframes/7242_gz_tilting_drone_x4
 ```
-K_P = Position gain <br/>
-K_v = Velocity gain <br/>
-K_R = Orientation gain <br/>
-k_w = Angular velocity gain <br/>
+MC_KR*_GAIN = Rotation gain <br/>
+MC_KA*_GAIN = Angular velocity gain <br/>
+MC_KX*_GAIN = Position gain <br/>
+MC_KV*_GAIN = velocity gain <br/>
 <br/>
-position = Desired Position in meter.<br/>
-Eular = Desired Roll pitch yaw angle in rad.<br/>
-
-
 
 ### To Debug GAZEBO:
 ## If drone model is not spawning in gazebo:

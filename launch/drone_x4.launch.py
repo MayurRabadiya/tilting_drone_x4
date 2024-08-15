@@ -7,9 +7,9 @@ from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
 import os
 
-# Define the PX4-Autopilot path under the workspace directory
+# Define the drone_x4_px4 path under the workspace directory
 home_dir = os.path.expanduser('~')
-px4_autopilot_dir = os.path.join(home_dir, 'ws', 'PX4-Autopilot')
+px4_autopilot_dir = os.path.join(home_dir, 'Downloads/workspace', 'drone_x4_px4')
 package_dir = get_package_share_directory('tilting_drone_x4')
 
 def generate_launch_description():
@@ -26,11 +26,11 @@ def generate_launch_description():
     )
 
     # Execute the PX4 SITL (Software In The Loop) simulation command
-   #  run_px4_sitl = ExecuteProcess(
-   #      cmd=['make', 'px4_sitl', drone_type],
-   #      cwd=px4_autopilot_dir,
-   #      output='screen'
-   #  )
+    run_px4_sitl = ExecuteProcess(
+        cmd=['make', 'px4_sitl', drone_type],
+        cwd=px4_autopilot_dir,
+        output='screen'
+    )
 
     # Define the visualizer node
     visualizer = Node(
@@ -41,11 +41,12 @@ def generate_launch_description():
         output='screen'
     )
 
+    # Define the offboard node
     offboard = Node(
         package='tilting_drone_x4',
         namespace='tilting_drone_x4',
         executable='offboard_control.py',
-        name='offboard_control',
+        name='Drone_X4_Node',
         output='screen'
     )
 
@@ -59,18 +60,13 @@ def generate_launch_description():
         output='screen'
     )
 
-
     # Create the launch description and populate it with actions
     ld = LaunchDescription([
         # Declare the drone type argument
         drone_type_args,
-        # Run the PX4 SITL process
-        # run_px4_sitl,
-        # Start the visualizer node
+        run_px4_sitl,
         visualizer,
-        # Start the Micro XRCE-DDS Agent process
         run_microxrce_agent,
-        # Start the RViz visualization tool
         rviz,
         offboard
     ])
