@@ -4,6 +4,9 @@
 This repository contains a simulation model of a tilting arm quadcopter and a controller to control the drone. The model is based on PX4-Autopilot SITL.
 The controller is implemeted inside the PX4-Autopilot firmware at low-level.
 
+### branch feedback_control has same controller with high-level implementation.
+[feedback_control](https://github.com/MayurRabadiya/tilting_drone_x4/tree/feedback_control).
+
 ## Minimum Requirements
 - ROS Humble
 - Gazebo Garden/Harmonic
@@ -105,7 +108,7 @@ ros2 param set /tilting_drone_x4/Drone_X4_Node mode 1
 
 ```
 Manual mode controls: <br/>
-Postion:
+Position:
 ```bash
 ros2 param set /tilting_drone_x4/Drone_X4_Node x_pos 5.0
 ros2 param set /tilting_drone_x4/Drone_X4_Node y_pos 5.0
