@@ -205,14 +205,14 @@ private:
                                         Eigen::Vector3d &velocity_m, Eigen::Vector3d &angular_velocity_m)
     {
 
-        position_m = rotateVectorFromToENU_NED(Eigen::Vector3d(msg->position[0], msg->position[1], msg->position[2]));
+        position_m = (Eigen::Vector3d(msg->position[0], msg->position[1], msg->position[2]));
 
         Eigen::Quaterniond quaternion(msg->q[0], msg->q[1], msg->q[2], msg->q[3]);
-        orientation_m = rotateQuaterniondromToENU_NED(quaternion);
+        orientation_m = (quaternion);
 
-        velocity_m = rotateVectorFromToENU_NED(Eigen::Vector3d(msg->velocity[0], msg->velocity[1], msg->velocity[2]));
+        velocity_m = (Eigen::Vector3d(msg->velocity[0], msg->velocity[1], msg->velocity[2]));
 
-        angular_velocity_m = rotateVectorFromToFRD_FLU(Eigen::Vector3d(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]));
+        angular_velocity_m = (Eigen::Vector3d(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]));
     }
 
 

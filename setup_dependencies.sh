@@ -10,14 +10,18 @@ echo "=========== Setting Up tilting_drone_x4 dependencies for PX4 SITL ========
 
 # Directory paths
 WORKSPACE_DIR=$(dirname "$(dirname "$(realpath "$0")")")
+<<<<<<< HEAD
 MICRO_XRCE_DDS_AGENT_DIR="$WORKSPACE_DIR/Micro-XRCE-DDS-Agent"
 PX4_AUTOPILOT_DIR="$WORKSPACE_DIR/drone_x4_px4"
 DRONE_X4_GAZEBO_DIR="$WORKSPACE_DIR/tilting_drone_x4/gazebo"
 PX4_MODEL_DIR="$PX4_AUTOPILOT_DIR/Tools/simulation/gz/models"
 AIRFRAME_DIR="$PX4_AUTOPILOT_DIR/ROMFS/px4fmu_common/init.d-posix/airframes"
 SERVO_CPP_DIR="$PX4_AUTOPILOT_DIR/src/modules/simulation/gz_bridge"
+=======
+MICRO_XRCE_DDS_AGENT_DIR="$WORKSPACE_DIR/../../Micro-XRCE-DDS-Agent"
+PX4_AUTOPILOT_DIR="$WORKSPACE_DIR/../../drone_x4_px4"
+>>>>>>> 82d7110 (Controller matched with low-level controlle in firmware)
 PX4_MSGS_DIR="$WORKSPACE_DIR/px4_msgs"
-AIRFRAME_CMAKE="$AIRFRAME_DIR/CMakeLists.txt"
 
 # Function for printing info messages
 print_info() {
@@ -57,10 +61,13 @@ else
     print_info "Micro-XRCE-DDS-Agent already exists."
 fi
 
-
 if [ ! -d "$PX4_AUTOPILOT_DIR" ]; then
     print_info "Cloning drone_x4_px4 into --> $PX4_AUTOPILOT_DIR..."
+<<<<<<< HEAD
     git clone "https://github.com/MayurRabadiya/drone_x4_px4.git" --recursive "$PX4_AUTOPILOT_DIR" || { print_error "Failed to clone drone_x4_px4"; exit 1; }
+=======
+    git clone https://github.com/MayurRabadiya/drone_x4_px4.git --recursive "$PX4_AUTOPILOT_DIR" || { print_error "Failed to clone drone_x4_px4"; exit 1; }
+>>>>>>> 82d7110 (Controller matched with low-level controlle in firmware)
     cd "$PX4_AUTOPILOT_DIR" || { print_error "Failed to cd into drone_x4_px4"; exit 1; }
     bash ./Tools/setup/ubuntu.sh || { print_error "Failed to run PX4 setup script"; exit 1; }
     cd "$WORKSPACE_DIR" || { print_error "Failed to return to workspace"; exit 1; }
@@ -76,6 +83,7 @@ else
     print_info "px4_msgs already exists."
 fi
 
+<<<<<<< HEAD
 # Copy tilting_drone_x4 model files to drone_x4_px4 if the directory exists
 TILTING_DRONE_MODEL="$DRONE_X4_GAZEBO_DIR/models/tilting_drone_x4"
 if [ -d "$TILTING_DRONE_MODEL" ]; then
@@ -115,4 +123,6 @@ else
     print_error "px4_add_romfs_files function not found in $AIRFRAME_CMAKE."
 fi
 
+=======
+>>>>>>> 82d7110 (Controller matched with low-level controlle in firmware)
 echo "=========== Set Up tilting_drone_x4 dependencies for PX4 SITL Finished ============="

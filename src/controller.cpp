@@ -1,4 +1,5 @@
 #include "../include/tilting_drone_x4/controller.h"
+#include "iostream"
 
 controller::controller()
 {
@@ -12,50 +13,48 @@ void controller::calculateControllerOutput(Eigen::VectorXd *controller_torque_th
 
         // Compute position tracking errors.
         const Eigen::Vector3d e_p = position_m_ - position_d_;
-        const Eigen::Vector3d r_p = (-position_gain_.cwiseProduct(e_p) - velocity_gain_.cwiseProduct(velocity_m_));
-        const Eigen::Vector3d r_p_g = _gravity * Eigen::Vector3d::UnitZ() + r_p;
-        Eigen::Vector3d thrust = R_m.transpose() * r_p_g * _uav_mass;
+        const Eigen::Vector3d r_p = (position_gain_.cwiseProduct(e_p) + velocity_gain_.cwiseProduct(velocity_m_)) + _uav_mass * _gravity * Eigen::Vector3d::UnitZ();
+        Eigen::Vector3d thrust = R_m.transpose() * r_p;
 
         // Compute rotational errors.
+
         
-        // Rotation error from Rotation Matrix
-       
         // const Eigen::Matrix3d e_R_matrix = 0.5 * (R_d.transpose() * R_m - R_m.transpose() * R_d);
         // Eigen::Vector3d e_R;
         // e_R << e_R_matrix(2, 1), e_R_matrix(0, 2), e_R_matrix(1, 0);
         // const Eigen::Vector3d r_R = -attitude_gain_.cwiseProduct(e_R) - angular_rate_gain_.cwiseProduct(angular_velocity_m_);
         // Eigen::Vector3d tau = _inertia_matrix.cwiseProduct(r_R);
 
+        Eigen::Vector3d e_w = -angular_velocity_m_;
+        Eigen::Matrix3d Psi = R_m.transpose() * R_d;
 
-        
-        // Rotation error from Qaternion
-
-        Eigen::Quaterniond q1 = Q_d.normalized();
-	Eigen::Quaterniond q2 = Q_m.inverse().normalized();
-	Eigen::Quaterniond q_err = q2 * q1;
-	q_err.normalize();
+        double cos_theta = (Psi.trace() - 1) / 2;
+        double theta = acosf(cos_theta);
 
         Eigen::Vector3d e_R;
-        e_R = Eigen::Vector3d(q_err.x(), q_err.y(), q_err.z()).cwiseProduct(e_R);
-	e_R *= q_err.w() > 0.0f ? 1.0f : -1.0f;  // sign;
 
-        const Eigen::Vector3d r_R = -e_R - angular_rate_gain_.cwiseProduct(angular_velocity_m_);
-        Eigen::Vector3d tau = _inertia_matrix.cwiseProduct(r_R);
+        if (theta < 1e-6f)
+        {
+                // If theta is very small, return zero vector (no rotation)
+                e_R.Zero();
+        }
+        else
+        {
+                double factor = theta / (2 * sin(theta));
+                e_R(0) = factor * (Psi(2, 1) - Psi(1, 2));
+                e_R(1) = factor * (Psi(0, 2) - Psi(2, 0));
+                e_R(2) = factor * (Psi(1, 0) - Psi(0, 1));
+        }
 
-        const Eigen::Matrix3d e_R_matrix = q_err.matrix();
+        Eigen::Vector3d tau = _inertia_matrix.cwiseProduct(e_R.cwiseProduct(attitude_gain_) + e_w.cwiseProduct(angular_rate_gain_));
 
-
-
-
-
-
-        _e_p = e_p;
+        _e_p = position_m_;
         _r_p = r_p;
-        _r_p_g = r_p_g;
-        
-        _e_R_matrix = e_R_matrix;
-        _e_R = e_R;
-        _r_R = r_R;
+        // _r_p_g = r_p_g;
+
+        _e_R_matrix = R_m;
+        // _e_R = e_R;
+        // _r_R = r_R;
 
         *controller_torque_thrust << thrust, tau;
 }
