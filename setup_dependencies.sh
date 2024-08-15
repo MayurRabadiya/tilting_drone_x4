@@ -10,8 +10,8 @@ echo "=========== Setting Up tilting_drone_x4 dependencies for PX4 SITL ========
 
 # Directory paths
 WORKSPACE_DIR=$(dirname "$(dirname "$(realpath "$0")")")
-MICRO_XRCE_DDS_AGENT_DIR="$WORKSPACE_DIR/../../Micro-XRCE-DDS-Agent"
-PX4_AUTOPILOT_DIR="$WORKSPACE_DIR/../../PX4-Autopilot"
+MICRO_XRCE_DDS_AGENT_DIR="$WORKSPACE_DIR/Micro-XRCE-DDS-Agent"
+PX4_AUTOPILOT_DIR="$WORKSPACE_DIR/drone_x4_px4"
 DRONE_X4_GAZEBO_DIR="$WORKSPACE_DIR/tilting_drone_x4/gazebo"
 PX4_MODEL_DIR="$PX4_AUTOPILOT_DIR/Tools/simulation/gz/models"
 AIRFRAME_DIR="$PX4_AUTOPILOT_DIR/ROMFS/px4fmu_common/init.d-posix/airframes"
@@ -59,13 +59,13 @@ fi
 
 
 if [ ! -d "$PX4_AUTOPILOT_DIR" ]; then
-    print_info "Cloning PX4-Autopilot into --> $PX4_AUTOPILOT_DIR..."
-    git clone "https://github.com/PX4/PX4-Autopilot.git" --recursive "$PX4_AUTOPILOT_DIR" || { print_error "Failed to clone PX4-Autopilot"; exit 1; }
-    cd "$PX4_AUTOPILOT_DIR" || { print_error "Failed to cd into PX4-Autopilot"; exit 1; }
+    print_info "Cloning drone_x4_px4 into --> $PX4_AUTOPILOT_DIR..."
+    git clone "https://github.com/MayurRabadiya/drone_x4_px4.git" --recursive "$PX4_AUTOPILOT_DIR" || { print_error "Failed to clone drone_x4_px4"; exit 1; }
+    cd "$PX4_AUTOPILOT_DIR" || { print_error "Failed to cd into drone_x4_px4"; exit 1; }
     bash ./Tools/setup/ubuntu.sh || { print_error "Failed to run PX4 setup script"; exit 1; }
     cd "$WORKSPACE_DIR" || { print_error "Failed to return to workspace"; exit 1; }
 else
-    print_info "PX4-Autopilot already exists."
+    print_info "drone_x4_px4 already exists."
 fi
 
 # Clone px4_msgs if not already done
@@ -76,7 +76,7 @@ else
     print_info "px4_msgs already exists."
 fi
 
-# Copy tilting_drone_x4 model files to PX4-Autopilot if the directory exists
+# Copy tilting_drone_x4 model files to drone_x4_px4 if the directory exists
 TILTING_DRONE_MODEL="$DRONE_X4_GAZEBO_DIR/models/tilting_drone_x4"
 if [ -d "$TILTING_DRONE_MODEL" ]; then
     print_info "Copying tilting_drone_x4 gazebo files to --> $PX4_MODEL_DIR..."
