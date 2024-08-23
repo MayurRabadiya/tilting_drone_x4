@@ -46,6 +46,7 @@ endif()
 ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS src/offboard_control.py DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS src/trajectory_node.py DESTINATION lib/${PROJECT_NAME})
 install(PROGRAMS src/visualizer.py DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

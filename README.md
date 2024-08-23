@@ -90,6 +90,8 @@ source install/local_setup.bash
 ```
 
 ### Launch the Simulation
+##### Offboard_control.py node starts px4_sitl in offboard-mode and waits for the trajectory_setpoints to publish to drone.
+##### Trajectory_node.py node starts trajectory. Trajectory can be change via rqr_reconfigure parameter as a "mode".
 To run the tilting_drone_x4 simulation, execute the following command:
 Runs with empty environment.
 ```bash
@@ -101,6 +103,10 @@ ros2 launch tilting_drone_x4 drone_x4.launch.py world:=_window
 ros2 launch tilting_drone_x4 drone_x4.launch.py world:=_wind_turbine
 ```
 
+To run the trajectory, execute the following command:
+```bash
+ros2 run tilting_drone_x4 trajectory_node.py
+```
 
 ### Modes
 Mode 0: Manual mode. Control drone_x4 with manual input from parameter server.   <br/>
