@@ -52,10 +52,11 @@ else
     print_info "Micro-XRCE-DDS-Agent already exists."
 fi
 
+BRANCH_NAME="${1:-main}"
 
 if [ ! -d "$PX4_AUTOPILOT_DIR" ]; then
-    print_info "Cloning drone_x4_px4 into --> $PX4_AUTOPILOT_DIR..."
-    git clone "https://github.com/MayurRabadiya/drone_x4_px4.git" --recursive "$PX4_AUTOPILOT_DIR" || { print_error "Failed to clone drone_x4_px4"; exit 1; }
+    print_info "Cloning drone_x4_px4 branch $BRANCH_NAME into --> $PX4_AUTOPILOT_DIR..."
+    git clone --branch "$BRANCH_NAME" --recursive "https://github.com/MayurRabadiya/drone_x4_px4.git" "$PX4_AUTOPILOT_DIR" || { print_error "Failed to clone branch $BRANCH_NAME"; exit 1; }
     cd "$PX4_AUTOPILOT_DIR" || { print_error "Failed to cd into drone_x4_px4"; exit 1; }
     bash ./Tools/setup/ubuntu.sh || { print_error "Failed to run PX4 setup script"; exit 1; }
     cd "$WORKSPACE_DIR" || { print_error "Failed to return to workspace"; exit 1; }
