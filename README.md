@@ -91,9 +91,16 @@ source install/local_setup.bash
 
 ### Launch the Simulation
 To run the tilting_drone_x4 simulation, execute the following command:
+Runs with empty environment.
 ```bash
 ros2 launch tilting_drone_x4 drone_x4.launch.py
 ```
+Run time parameter to chnage the world environment:
+```bash
+ros2 launch tilting_drone_x4 drone_x4.launch.py world:=_window
+ros2 launch tilting_drone_x4 drone_x4.launch.py world:=_wind_turbine
+```
+
 
 ### Modes
 Mode 0: Manual mode. Control drone_x4 with manual input from parameter server.   <br/>

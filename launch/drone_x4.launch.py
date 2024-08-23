@@ -14,10 +14,13 @@ package_dir = get_package_share_directory('tilting_drone_x4')
 
 def generate_launch_description():
     # Declare the drone type launch argument
-    drone_type = LaunchConfiguration(
-        'drone_type', default='gz_tilting_drone_x4')
+    drone_type = LaunchConfiguration('drone_type', default='gz_tilting_drone_x4')
     drone_type_args = DeclareLaunchArgument('drone_type', default_value=drone_type,
                                             description='Type of the drone to launch (gz_tilting_drone_x4, gz_x500)')
+
+    world = LaunchConfiguration('world', default='')
+    world_args = DeclareLaunchArgument('world', default_value=world,
+                                            description='Type of the world environment to launch (_window, _wind_turbine...)')
 
     # Execute the Micro XRCE-DDS Agent process
     run_microxrce_agent = ExecuteProcess(
@@ -27,7 +30,7 @@ def generate_launch_description():
 
     # Execute the PX4 SITL (Software In The Loop) simulation command
     run_px4_sitl = ExecuteProcess(
-        cmd=['make', 'px4_sitl', drone_type],
+        cmd=['make', 'px4_sitl', [drone_type,world]],
         cwd=px4_autopilot_dir,
         output='screen'
     )
@@ -65,6 +68,7 @@ def generate_launch_description():
         # Declare the drone type argument
         run_microxrce_agent,
         drone_type_args,
+        world_args,
         run_px4_sitl,
         visualizer,
         rviz,
