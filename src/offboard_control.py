@@ -12,12 +12,15 @@ from px4_msgs.msg import VehicleStatus
 from px4_msgs.msg import VehicleOdometry
 from px4_msgs.msg import VehicleControlMode
 from px4_msgs.msg import TiltingDroneX4AttitudeSetpoint
+from px4_msgs.msg import TiltingDroneX4Gains
 
+from geometry_msgs.msg import PoseStamped
 from rcl_interfaces.msg import SetParametersResult
 
 from scipy.spatial.transform import Rotation as R
-
 import numpy as np
+import math
+
 
 class OffboardControl(Node):
     """Node for controlling a vehicle in offboard mode."""
@@ -33,16 +36,32 @@ class OffboardControl(Node):
             depth=1)
 
         # Create subscribers
-        self.vehicle_local_position_subscriber = self.create_subscription(VehicleLocalPosition, '/fmu/out/vehicle_local_position', self.vehicle_local_position_callback, qos_profile)
-        self.vehicle_status_subscriber = self.create_subscription(VehicleStatus, '/fmu/out/vehicle_status', self.vehicle_status_callback, qos_profile)
-        self.vehicle_odometry_subsciber = self.create_subscription(VehicleOdometry, '/fmu/out/vehicle_odometry', self.vehicle_odometry_callback, qos_profile)
+        self.vehicle_local_position_subscriber = self.create_subscription(
+            VehicleLocalPosition, '/fmu/out/vehicle_local_position', self.vehicle_local_position_callback, qos_profile)
+        self.vehicle_status_subscriber = self.create_subscription(
+            VehicleStatus, '/fmu/out/vehicle_status', self.vehicle_status_callback, qos_profile)
+        self.vehicle_odometry_subsciber = self.create_subscription(
+            VehicleOdometry, '/fmu/out/vehicle_odometry', self.vehicle_odometry_callback, qos_profile)
 
         # Create publishers
-        self.offboard_control_mode_publisher = self.create_publisher(OffboardControlMode, '/fmu/in/offboard_control_mode', qos_profile)
-        self.trajectory_setpoint_publisher = self.create_publisher(TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile)
-        self.vehicle_command_publisher = self.create_publisher(VehicleCommand, '/fmu/in/vehicle_command', qos_profile)
-        self.VehicleControlMode_pub = self.create_publisher(VehicleControlMode, '/fmu/in/vehicle_control_mode', qos_profile)
-        self.tilting_drone_x4_attitude_setpoint_pub = self.create_publisher(TiltingDroneX4AttitudeSetpoint, '/fmu/in/tilting_drone_x4_attitude_setpoint', qos_profile)
+        self.offboard_control_mode_publisher = self.create_publisher(
+            OffboardControlMode, '/fmu/in/offboard_control_mode', qos_profile)
+        self.trajectory_setpoint_publisher = self.create_publisher(
+            TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile)
+        self.vehicle_command_publisher = self.create_publisher(
+            VehicleCommand, '/fmu/in/vehicle_command', qos_profile)
+        self.VehicleControlMode_pub = self.create_publisher(
+            VehicleControlMode, '/fmu/in/vehicle_control_mode', qos_profile)
+        self.tilting_drone_x4_attitude_setpoint_pub = self.create_publisher(
+            TiltingDroneX4AttitudeSetpoint, '/fmu/in/tilting_drone_x4_attitude_setpoint', qos_profile)
+        self.tilting_drone_x4_gains_pub = self.create_publisher(
+            TiltingDroneX4Gains, '/fmu/in/tilting_drone_x4_gains', qos_profile)
+
+        self.drone_local_pose_publisher = self. create_publisher(
+            PoseStamped, '/drone_x4/pose', 10)
+
+        self.reference_pose_publisher = self. create_publisher(
+            PoseStamped, '/reference/pose', 10)
 
         # Initialize variables
         self.nav_state = VehicleStatus.NAVIGATION_STATE_MAX
@@ -51,40 +70,52 @@ class OffboardControl(Node):
         self.vehicle_status = VehicleStatus()
         self.offboard_setpoint_counter = 0
         self.theta = 0.0
+        self.start = 0
 
         self.declare_parameter('radius', 5.0)
-        self.declare_parameter('altitude', 5.0)
         self.declare_parameter('t_dt', 0.001)
-
-        self.radius = self.get_parameter('radius').value
-        self.altitude = self.get_parameter('altitude').value
-        self.t_dt = self.get_parameter('t_dt').value
-
         self.declare_parameter('mode', 0)
-        self.mode = self.get_parameter('mode').value
 
         self.declare_parameter('r', 0.0)
         self.declare_parameter('p', 0.0)
         self.declare_parameter('y', 0.0)
 
-        self.r = self.get_parameter('r').value
-        self.p = self.get_parameter('p').value
-        self.y = self.get_parameter('y').value
-
         self.declare_parameter('x_pos', 0.0)
         self.declare_parameter('y_pos', 0.0)
         self.declare_parameter('z_pos', 5.0)
 
-        self.x_pos = self.get_parameter('x_pos').value
-        self.y_pos = self.get_parameter('y_pos').value
-        self.z_pos = self.get_parameter('z_pos').value
+        self.declare_parameter('rot_gain_x', 90.0)
+        self.declare_parameter('rot_gain_y', 90.0)
+        self.declare_parameter('rot_gain_z', 30.0)
+
+        self.declare_parameter('angular_gain_x', 25.0)
+        self.declare_parameter('angular_gain_y', 25.0)
+        self.declare_parameter('angular_gain_z', 22.0)
+
+        self.declare_parameter('angular_i_gain_x', 0.0)
+        self.declare_parameter('angular_i_gain_y', 0.0)
+        self.declare_parameter('angular_i_gain_z', 0.0)
+
+        self.declare_parameter('pos_gain_x', 8.2)
+        self.declare_parameter('pos_gain_y', 8.2)
+        self.declare_parameter('pos_gain_z', 9.2)
+
+        self.declare_parameter('val_gain_x', 9.5)
+        self.declare_parameter('val_gain_y', 9.5)
+        self.declare_parameter('val_gain_z', 9.5)
+
+        self.declare_parameter('pos_i_gain_x', 0.0)
+        self.declare_parameter('pos_i_gain_y', 0.0)
+        self.declare_parameter('pos_i_gain_z', 0.0)
+
+
 
         # Create a timer to publish control commands
         self.offboard_timer = self.create_timer(0.02, self.offboard_callback)
         self.control_timer = self.create_timer(0.01, self.timer_callback)
 
         # Add parameter callback
-        self.add_on_set_parameters_callback(self.parameter_callback)
+        # self.add_on_set_parameters_callback(self.parameter_callback)
 
     def vehicle_odometry_callback(self, odom_msgs):
         self.position_w = odom_msgs.position
@@ -98,36 +129,54 @@ class OffboardControl(Node):
         self.engage_offboard_mode()
         self.arm()
 
-    def parameter_callback(self, params):
+    def parameter_callback(self):
         """Callback function to handle parameter changes."""
-        for param in params:
-            if param.name == 'altitude':
-                self.altitude = param.value
-            elif param.name == 'radius':
-                self.radius = param.value
-            elif param.name == 't_dt':
-                self.t_dt = param.value
-            elif param.name == 'r':
-                self.r = param.value
-            elif param.name == 'p':
-                self.p = param.value
-            elif param.name == 'y':
-                self.y = param.value
-            elif param.name == 'x_pos':
-                self.x_pos = param.value
-            elif param.name == 'y_pos':
-                self.y_pos = param.value
-            elif param.name == 'z_pos':
-                self.z_pos = param.value
-            elif param.name == 'mode':
-                self.mode = param.value
-                self.mode_print()
-        return SetParametersResult(successful=True)
+        self.radius = self.get_parameter('radius').value
+        self.t_dt = self.get_parameter('t_dt').value
+        self.mode = self.get_parameter('mode').value
+
+        self.r = self.get_parameter('r').value
+        self.p = self.get_parameter('p').value
+        self.y = self.get_parameter('y').value
+
+        self.x_pos = self.get_parameter('x_pos').value
+        self.y_pos = self.get_parameter('y_pos').value
+        self.z_pos = self.get_parameter('z_pos').value
+
+        self.rot_gain_x = self.get_parameter('rot_gain_x').value
+        self.rot_gain_y = self.get_parameter('rot_gain_y').value
+        self.rot_gain_z = self.get_parameter('rot_gain_z').value
+
+        self.angular_gain_x = self.get_parameter('angular_gain_x').value
+        self.angular_gain_y = self.get_parameter('angular_gain_y').value
+        self.angular_gain_z = self.get_parameter('angular_gain_z').value
+
+        self.angular_i_gain_x = self.get_parameter('angular_i_gain_x').value
+        self.angular_i_gain_y = self.get_parameter('angular_i_gain_y').value
+        self.angular_i_gain_z = self.get_parameter('angular_i_gain_z').value
+
+        self.pos_gain_x = self.get_parameter('pos_gain_x').value
+        self.pos_gain_y = self.get_parameter('pos_gain_y').value
+        self.pos_gain_z = self.get_parameter('pos_gain_z').value
+
+        self.val_gain_x = self.get_parameter('val_gain_x').value
+        self.val_gain_y = self.get_parameter('val_gain_y').value
+        self.val_gain_z = self.get_parameter('val_gain_z').value
+
+        self.pos_i_gain_x = self.get_parameter('pos_i_gain_x').value
+        self.pos_i_gain_y = self.get_parameter('pos_i_gain_y').value
+        self.pos_i_gain_z = self.get_parameter('pos_i_gain_z').value
+
 
     def mode_print(self):
-        if self.mode == 0: self.get_logger().info("Switched to Manual mode...")
-        elif self.mode == 1: self.get_logger().info("Switched to Infinity shape trajectory mode...")
-        elif self.mode == 2: self.get_logger().info("Switched to Circular shape trajectory mode...")
+        if self.mode == 0:
+            self.get_logger().info("Switched to Manual mode...")
+        elif self.mode == 1:
+            self.get_logger().info("Switched to Infinity shape trajectory mode...")
+        elif self.mode == 2:
+            self.get_logger().info("Switched to Circular shape trajectory mode...")
+        elif self.mode == 3:
+            self.get_logger().info("Switched to Star shape trajectory mode...")
 
     def vehicle_local_position_callback(self, vehicle_local_position):
         """Callback function for vehicle_local_position topic subscriber."""
@@ -181,25 +230,38 @@ class OffboardControl(Node):
     def publish_position_setpoint(self, x: float, y: float, z: float):
         """Publish the trajectory setpoint."""
         msg = TrajectorySetpoint()
-        msg.position = [x, y, z]
+        x_ned, y_ned, z_ned = self.frd_to_flu([x, y, z])
+        msg.position = [x_ned, y_ned, z_ned]
         msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
         # self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
 
+    def publish_gains(self):
+        gain_msg = TiltingDroneX4Gains()
+        gain_msg.rot_gain          = [self.rot_gain_x, self.rot_gain_y, self.rot_gain_z]
+        gain_msg.angular_gain      = [self.angular_gain_x, self.angular_gain_y, self.angular_gain_z]
+        gain_msg.rot_integral_gain = [self.angular_i_gain_x, self.angular_i_gain_y, self.angular_i_gain_z]
+
+        gain_msg.pos_gain          = [self.pos_gain_x, self.pos_gain_y, self.pos_gain_z]
+        gain_msg.val_gain          = [self.val_gain_x, self.val_gain_y, self.val_gain_z]
+        gain_msg.pos_integral_gain = [self.pos_i_gain_x, self.pos_i_gain_y, self.pos_i_gain_z]
+
+        gain_msg.timestamp = int(Clock().now().nanoseconds / 1000)
+        self.tilting_drone_x4_gains_pub.publish(gain_msg)
+
     def publish_attitude_setpoint(self, r: float, p: float, y: float):
-        roll = np.radians(self.r)
-        pitch = np.radians(self.p)
-        yaw = np.radians(self.y)
+        roll = np.radians(r)
+        pitch = np.radians(p)
+        yaw = np.radians(y)
 
         rot = R.from_euler('xyz', [roll, pitch, yaw], degrees=False)
         q = rot.as_quat()  # Quaternion [x, y, z, w]
 
         att_msg = TiltingDroneX4AttitudeSetpoint()
-        att_msg.q = [q[3], q[0], q[1], q[2]]
+        att_msg.q = [q[3], q[0], -q[1], -q[2]]
         att_msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.tilting_drone_x4_attitude_setpoint_pub.publish(att_msg)
         # self.get_logger().info(f"Publishing attitude setpoints {[r, p, y]}\n")
-
 
     def publish_vehicle_command(self, command, **params) -> None:
         """Publish a vehicle command."""
@@ -220,102 +282,97 @@ class OffboardControl(Node):
         msg.timestamp = int(Clock().now().nanoseconds / 1000)
         self.vehicle_command_publisher.publish(msg)
 
-    def enu_to_ned(self, enu):
-        """Convert ENU coordinates to NED coordinates."""
-        # NED (X North, Y East, Z Down) & ENU (X East, Y North, Z Up)
-        ned = enu[1],  enu[0], -enu[2]
-        return ned
-
     def frd_to_flu(self, frd):
         """Convert FRD coordinates to FLU coordinates."""
         # FRD (X Forward, Y Right, Z Down) & FLU (X Forward, Y Left, Z Up)
         flu = frd[0],  -frd[1], -frd[2]
         return flu
 
-    def rotate_quaternion_from_to_enu_ned(quat_in):
-        # Transform from orientation represented in ROS format to PX4 format and back
-        #  * Two steps conversion:
-        #  * 1. aircraft to NED is converted to aircraft to ENU (NED_to_ENU conversion)
-        #  * 2. aircraft to ENU is converted to baselink to ENU (baselink_to_aircraft conversion)
-        # OR
-        #  * 1. baselink to ENU is converted to baselink to NED (ENU_to_NED conversion)
-        #  * 2. baselink to NED is converted to aircraft to NED (aircraft_to_baselink conversion
-        # NED_ENU_Q Static quaternion needed for rotating between ENU and NED frames
-
-        # Define the euler angles
-        euler_1 = [np.pi, 0.0, np.pi / 2]
-        euler_2 = [np.pi, 0.0, 0.0]
-
-        # Convert euler angles to quaternions
-        NED_ENU_Q = R.from_euler('zyx', euler_1).as_quat()
-        AIRCRAFT_BASELINK_Q = R.from_euler('zyx', euler_2).as_quat()
-
-        # Convert the input quaternion to a Rotation object
-        quat_in = R.from_quat(quat_in)
-
-        # Perform the quaternion multiplications
-        NED_ENU_Q = R.from_quat(NED_ENU_Q)
-        AIRCRAFT_BASELINK_Q = R.from_quat(AIRCRAFT_BASELINK_Q)
-
-        # Convert the Rotation objects back to quaternions
-        result_quat = ((NED_ENU_Q * quat_in) * AIRCRAFT_BASELINK_Q).as_quat()
-
-        return result_quat
-
     def circular_traj(self):
         """Circular motion trajectory"""
         # Update position setpoint to follow circular trajectory
 
-        x_enu = self.radius * np.cos(self.theta)
-        y_enu = self.radius * np.sin(self.theta)
-        z_enu = self.altitude
+        x = self.radius * np.cos(self.theta)
+        y = self.radius * np.sin(self.theta)
+        z = self.z_pos
         self.theta += self.t_dt
 
-        # Convert ENU --> NED    ENU_(X East, Y North, Z Up)_ROS / NED_(X North, Y East, Z Down)_PX4
-        x_ned, y_ned, z_ned = self.enu_to_ned([x_enu, y_enu, z_enu])
-
-        self.publish_position_setpoint(x_ned, y_ned, z_ned)
-        self.publish_attitude_setpoint(self.r, self.p, self.y)
+        angle = np.degrees(np.arctan2(x, y))
+        self.publish_position_setpoint(x, y, z)
+        self.publish_attitude_setpoint(angle, 90.0, 90.0)
 
     def infinity_traj(self):
         """Infinity motion trajectory"""
         # Update position setpoint to follow infinity (lemniscate) trajectory
         a = self.radius
-        x_enu = a * np.sin(self.theta)
-        y_enu = a * np.sin(self.theta) * np.cos(self.theta)
-        z_enu = self.altitude
+        x = a * np.sin(self.theta)
+        y = a * np.sin(self.theta) * np.cos(self.theta)
+        z = self.z_pos
         self.theta += self.t_dt
 
-        # Convert ENU --> NED    ENU_(X East, Y North, Z Up)_ROS / NED_(X North, Y East, Z Down)_PX4
-        x_ned, y_ned, z_ned = self.enu_to_ned([x_enu, y_enu, z_enu])
+        angle = np.degrees(np.arctan2(x, y))
+        self.publish_position_setpoint(x, y, z)
+        self.publish_attitude_setpoint(angle, 90.0, self.y)
 
-        angle = np.degrees(np.arctan2(x_ned, y_ned))
-        self.publish_position_setpoint(x_ned, y_ned, z_ned)
+        pose_msg = PoseStamped()
+        pose_msg.pose.position.x = float(x)
+        pose_msg.pose.position.y = -float(y)
+        pose_msg.pose.position.z = -float(z)
 
-        roll = np.radians(angle)
-        pitch = np.radians(90)
-        yaw = np.radians(self.y)
+        pose_msg.pose.orientation.w = 1.0
+        pose_msg.pose.orientation.x = 1.0
+        pose_msg.pose.orientation.y = 1.0
+        pose_msg.pose.orientation.z = 1.0
+        self.drone_local_pose_publisher.publish(pose_msg)
 
-        rot = R.from_euler('xyz', [roll, pitch, yaw], degrees=False)
-        q = rot.as_quat()  # Quaternion [x, y, z, w]
+    def star_traj(self):
+        outer_radius = 5
+        inner_radius = 2
+        num_points = 3  # number of outer points
+        # since each outer point has an adjacent inner point
+        total_vertices = num_points * 2
+        angle_between_vertices = 360 / total_vertices  # in degrees
 
-        att_msg = TiltingDroneX4AttitudeSetpoint()
-        att_msg.q = [q[3], q[0], q[1], q[2]]
-        att_msg.timestamp = int(Clock().now().nanoseconds / 1000)
-        self.tilting_drone_x4_attitude_setpoint_pub.publish(att_msg)
+        # Generate the coordinates
+        i = self.start
+        angle_deg = i * angle_between_vertices
+        rad = np.radians(angle_deg)
+        radius = outer_radius if i % 2 == 0 else inner_radius
+
+        x = radius * math.cos(rad)
+        y = radius * math.sin(rad)
+        z = self.z_pos
+        angle = np.degrees(np.arctan2(x, y))
+
+        self.publish_position_setpoint(x, y, z)
+        self.publish_attitude_setpoint(angle, 90.0, self.y)
+
+        current_pos = self.frd_to_flu(self.position_w)
+        ref_dist = np.sqrt((x ** 2) + (y ** 2))
+        curr_dist = np.sqrt((current_pos[0] ** 2) + (current_pos[1] ** 2))
+        if (np.abs(ref_dist - curr_dist)) < 0.1:
+            self.start += 1
+            if self.start == total_vertices + 1:
+                self.start = 1
 
     def timer_callback(self) -> None:
         """Callback function for the timer."""
         self.publish_offboard_control_heartbeat_signal()
+        self.parameter_callback()
 
         if self.vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD:
-            if self.mode == 1: self.infinity_traj()
-            elif self.mode == 2: self.circular_traj()
+            self.publish_gains()
+            if self.mode == 1:
+                self.infinity_traj()
+            elif self.mode == 2:
+                self.circular_traj()
+            elif self.mode == 3:
+                self.star_traj()
             elif self.mode == 0:
-                self.publish_position_setpoint(self.x_pos, self.y_pos, -self.z_pos)
+                self.publish_position_setpoint(self.x_pos, self.y_pos, self.z_pos)
                 self.publish_attitude_setpoint(self.r, self.p, self.y)
             else:
-                self.publish_position_setpoint(self.x_pos, self.y_pos, -self.z_pos)
+                self.publish_position_setpoint(self.x_pos, self.y_pos, self.z_pos)
                 self.publish_attitude_setpoint(self.r, self.p, self.y)
 
 
