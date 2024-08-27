@@ -9,7 +9,7 @@ import os
 
 # Define the drone_x4_px4 path under the workspace directory
 home_dir = os.path.expanduser('~')
-px4_autopilot_dir = os.path.join(home_dir, 'Downloads/workspace', 'drone_x4_px4')
+px4_autopilot_dir = os.path.join(home_dir, 'workspace', 'drone_x4_px4')
 package_dir = get_package_share_directory('tilting_drone_x4')
 
 def generate_launch_description():
