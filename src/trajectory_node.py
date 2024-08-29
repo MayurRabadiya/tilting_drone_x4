@@ -36,11 +36,13 @@ class TrajectoryGeneration(Node):
 
         # Initialize variables
         self.theta = 0.0
+        self.theta_2 = 1.0
         self.start = 0
 
         self.declare_parameter('radius',   5.0)
         self.declare_parameter('t_dt',   0.001)
         self.declare_parameter('mode',       0)
+        self.declare_parameter('spiral_h', 0.1)
 
         self.declare_parameter('roll',  0.0)
         self.declare_parameter('pitch', 0.0)
@@ -114,6 +116,45 @@ class TrajectoryGeneration(Node):
         x = self.radius * np.cos(self.theta)
         y = self.radius * np.sin(self.theta)
         z = self.z_pos
+
+        # Initialize roll and pitch to zero
+        roll = 0.0
+        pitch = 0.0
+
+        # Check if theta is within specified ranges for roll and pitch to change
+        if (70 <= np.degrees(self.theta) <= 110) or \
+        (160 <= np.degrees(self.theta) <= 200) or \
+        (250 <= np.degrees(self.theta) <= 290) or \
+        (340 <= np.degrees(self.theta) <= 360) or \
+        (0 <= np.degrees(self.theta) <= 20):
+            roll = np.degrees(np.arctan2(x, y))
+            pitch = 90.0
+
+
+        yaw = self.yaw
+        print(np.degrees(self.theta))
+
+        # Convert Euler angles to quaternion
+        q = self.eular_to_quat([roll, pitch, yaw])
+
+        # Publish the trajectory
+        self.trajectory_publish([x, y, z], orientation=q)
+
+        # Update theta for the next time step
+
+        if np.degrees(self.theta) >= 360:
+            self.theta = 0
+        self.theta += self.t_dt
+        # print("X: "+str(current_pos[0])+"  Y: "+str(current_pos[1])+"  Angle: "+str(self.theta))
+
+
+    def spiral_traj(self):
+        """Spiral motion trajectory"""
+        # Update position setpoint to follow circular trajectory
+        spiral_h = self.get_parameter('spiral_h').value
+        x = self.radius * np.cos(self.theta)
+        y = self.radius * np.sin(self.theta)
+        z = self.z_pos + spiral_h * self.theta
         roll  = np.degrees(np.arctan2(x, y))
         pitch = 90.0
         yaw   = self.yaw
@@ -139,7 +180,7 @@ class TrajectoryGeneration(Node):
         """Star trajectory"""
         outer_radius = 5
         inner_radius = 2
-        num_points = 3  # number of outer points
+        num_points = 5  # number of outer points
         # since each outer point has an adjacent inner point
         total_vertices = num_points * 2
         angle_between_vertices = 360 / total_vertices  # in degrees
@@ -153,6 +194,7 @@ class TrajectoryGeneration(Node):
         x = radius * math.cos(rad)
         y = radius * math.sin(rad)
         z = self.z_pos
+
         roll = np.degrees(np.arctan2(x, y))
         pitch = 90.0
         yaw   = self.yaw
@@ -163,10 +205,48 @@ class TrajectoryGeneration(Node):
         current_pos = self.frd_to_flu(self.uav_position)
         ref_dist = np.sqrt((x ** 2) + (y ** 2))
         curr_dist = np.sqrt((current_pos[0] ** 2) + (current_pos[1] ** 2))
+
         if (np.abs(ref_dist - curr_dist)) < 0.1:
             self.start += 1
             if self.start == total_vertices + 1:
                 self.start = 1
+
+
+    def vertical_star_traj(self):
+        """Star trajectory"""
+        outer_radius = 5
+        inner_radius = 2
+        num_points = 5  # number of outer points
+        # since each outer point has an adjacent inner point
+        total_vertices = num_points * 2
+        angle_between_vertices = 360 / total_vertices  # in degrees
+
+        # Generate the coordinates
+        i = self.start
+        angle_deg = i * angle_between_vertices
+        rad = np.radians(angle_deg)
+        radius = outer_radius if i % 2 == 0 else inner_radius
+
+        x = self.x_pos
+        y = radius * math.cos(rad)
+        z = radius * math.sin(rad) + 10
+
+        roll = np.degrees(np.arctan2(y, z))
+        pitch = 90.0
+        yaw   = self.yaw
+
+        q = self.eular_to_quat([roll, pitch, yaw])
+        self.trajectory_publish([x,  y, z-0.2], orientation = q)
+
+        current_pos = self.frd_to_flu(self.uav_position)
+        ref_dist = np.sqrt((z ** 2) + (y ** 2))
+        curr_dist = np.sqrt((current_pos[2] ** 2) + (current_pos[1] ** 2))
+
+        if (np.abs(ref_dist - curr_dist)) < 0.2:
+            self.start += 1
+            if self.start == total_vertices + 1:
+                self.start = 1
+
 
     def timer_callback(self) -> None:
         """Callback function for the timer."""
@@ -177,6 +257,8 @@ class TrajectoryGeneration(Node):
             self.circular_traj()
         elif self.mode == 3:
             self.star_traj()
+        elif self.mode == 4:
+            self.spiral_traj()
         elif self.mode == 0:
             q = self.eular_to_quat([self.roll, self.pitch, self.yaw])
             self.trajectory_publish([self.x_pos, self.y_pos, self.z_pos], orientation = q)

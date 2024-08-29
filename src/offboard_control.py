@@ -79,13 +79,13 @@ class OffboardControl(Node):
         self.declare_parameter('angular_i_gain_z', 0.0)
 
         # Position error gains
-        self.declare_parameter('pos_gain_x', 8.2)
-        self.declare_parameter('pos_gain_y', 8.2)
+        self.declare_parameter('pos_gain_x', 3.2)
+        self.declare_parameter('pos_gain_y', 3.2)
         self.declare_parameter('pos_gain_z', 9.2)
 
         # Velocity error gains
-        self.declare_parameter('val_gain_x', 9.5)
-        self.declare_parameter('val_gain_y', 9.5)
+        self.declare_parameter('val_gain_x', 3.5)
+        self.declare_parameter('val_gain_y', 3.5)
         self.declare_parameter('val_gain_z', 9.5)
 
         # Position error integral gains
