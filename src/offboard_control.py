@@ -64,8 +64,8 @@ class OffboardControl(Node):
         self.setpoints_recived = False
 
         # Rotarion error gains
-        self.declare_parameter('rot_gain_x', 90.0)
-        self.declare_parameter('rot_gain_y', 90.0)
+        self.declare_parameter('rot_gain_x', 60.0)
+        self.declare_parameter('rot_gain_y', 60.0)
         self.declare_parameter('rot_gain_z', 30.0)
 
         # Angular velocity error gains
