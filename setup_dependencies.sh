@@ -11,7 +11,7 @@ echo "=========== Setting Up tilting_drone_x4 dependencies for PX4 SITL ========
 # Directory paths
 WORKSPACE_DIR=$(dirname "$(dirname "$(realpath "$0")")")
 MICRO_XRCE_DDS_AGENT_DIR="$WORKSPACE_DIR/Micro-XRCE-DDS-Agent"
-PX4_AUTOPILOT_DIR="$WORKSPACE_DIR/drone_x4_px4"
+PX4_AUTOPILOT_DIR="$WORKSPACE_DIR/../../drone_x4_px4"
 PX4_MSGS_DIR="$WORKSPACE_DIR/px4_msgs"
 
 # Function for printing info messages
