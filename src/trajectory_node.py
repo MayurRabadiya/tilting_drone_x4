@@ -42,6 +42,9 @@ class TrajectoryGeneration(Node):
         self.start = 0
         self.current_pos = [0.0, 0.0, 0.0]
 
+        self.reverse = False
+
+
         self.declare_parameter('mode', 0)
         self.declare_parameter('roll', 0.0)
         self.declare_parameter('pitch', 0.0)
@@ -54,7 +57,7 @@ class TrajectoryGeneration(Node):
         self.declare_parameter('radius', 5.0)
         self.declare_parameter('t_dt', 0.001)
         self.declare_parameter('spiral_h', 0.1)
-        self.declare_parameter('speed', 2.0)
+        self.declare_parameter('speed', 1.2)
 
         # Create a timer to call the control loop at regular intervals
         self.control_timer = self.create_timer(0.01, self.timer_callback)
@@ -147,6 +150,39 @@ class TrajectoryGeneration(Node):
         ref_msg.z = float(yaw)
         self.reference_eular.publish(ref_msg)
 
+
+    def taj_tracking(self):
+        """Generate and publish half-circular motion trajectory."""
+        # Update position setpoint to follow half-circular trajectory
+        x = 13.0 * np.cos(self.theta)
+        z = 49 + 13.0 * np.sin(self.theta)
+        y = self.y_pos
+
+        roll = self.roll
+        pitch = np.degrees(np.arctan2(x, 13.0 * np.sin(self.theta))) 
+        yaw = self.yaw
+
+        # Convert Euler angles to quaternion for orientation
+        q = self.eular_to_quat([roll, pitch, yaw])
+        self.trajectory_publish([x, y, z], orientation=q)
+
+        # Update theta for half-circle movement
+        if not self.reverse:  # Moving forward
+            self.theta += self.t_dt
+            if self.theta >= (np.pi + np.deg2rad(10)):  # When reaching the end of the half-circle (π radians or 180 degrees)
+                self.reverse = True  # Start moving back
+        else:  # Moving back to start
+            self.theta -= self.t_dt
+            if self.theta <= 0:  # When back at the starting position
+                self.reverse = False  # Start moving forward again
+
+        # Publish reference Euler angles
+        ref_msg = Vector3()
+        ref_msg.x = float(roll)
+        ref_msg.y = float(pitch)
+        ref_msg.z = float(yaw)
+        self.reference_eular.publish(ref_msg)
+
     def narrow_window(self):
         """Generate and publish trajectory to pass UAV from narrow window."""
         x = self.radius * np.cos(self.theta)
@@ -164,9 +200,7 @@ class TrajectoryGeneration(Node):
         (0 <= np.degrees(self.theta) <= 20):
             roll = np.degrees(np.arctan2(x, y))
             pitch = 90.0
-
-        roll = np.degrees(np.arctan2(x, y))
-        pitch = self.pitch
+            
         yaw = self.yaw
 
         q = self.eular_to_quat([roll, pitch, yaw])
@@ -294,22 +328,40 @@ class TrajectoryGeneration(Node):
             if self.start == total_vertices + 1:
                 self.start = 1
 
-    def wind_turbine(self):
-        positions = [
-            (-2.8,  4.5,  17.0,    0,   0, 0),
-            (-2.8,  11.0, 9.5,     40,  0, 0),
-            (-2.8,  12.5, 9.5,    -40,  0, 180),
-            (-2.8,  6.5,  17.5,   -40,  0, 180),
-            (-2.8,  6.3,  18.0,    20,  0, 180),
-            (-2.8,  9.0,  27.5,    20,  0, 180),
-            (-2.8,  7.5,  27.5,   -20,  0, 180),
-            (-2.8,  4.5,  21.0,   -20,  0, 0),
-            (-2.8,  3.5,  19.5,   -110, 0, 0),
-            (-2.8, -6.0,  18.5,   -110, 0, 0),
-            (-2.8, -6.0,  15.0,    110, 0, 0),
-            (-2.8,  3.7,  16.4,    110, 0, 0)]
+    def wind_turbine(self) :
+        # positions = [ 
+        #     (-3.5, -7.0,   25.0,    0,   0, 0),
+        #     (-3.5,  4.0,   14.5,    20,  0, 0),
+        #     (-3.5,  7.5,   15.0,    20,  0, 0),
+        #     (-3.5, -2.0,   28.0,   -20,  0, 180),
+        #     (-3.5, -3.0,   29.5,    30,  0, 180),
+        #     (-3.5,  2.0,   45.0,    30,  0, 180),
+        #     (-3.5, -2.0,   45.0,   -30,  0, 0),
+        #     (-3.5, -7.0,   30.0,   -30,  0, 0),
+        #     (-3.5, -8.0,   29.0,   -30,  0, 0),
+        #     (-3.5, -25.0,  25.0,   -80, 0, 0),
+        #     (-3.5, -25.0,  23.0,    110, 0, 0),
+        #     (-3.5, -7.0,   24.0,    110, 0, 0)]
+
+
+        positions = [ 
+            (-3.5, -7.0,   25.0,    0,   0, 0),
+            (-3.5,  4.0,   14.5,    0,  0, 0),
+            (-3.5,  7.5,   15.0,    0,  0, 180),
+            (-3.5, -2.0,   28.0,   -0,  0, 180),
+            (-3.5, -3.0,   29.5,    0,  0, 180),
+            (-3.5,  2.0,   45.0,    0,  0, 180),
+            (-3.5, -2.0,   45.0,   -0,  0, 180),
+            (-3.5, -7.0,   30.0,   -0,  0, 0),
+            (-3.5, -8.0,   29.0,   -0,  0, 0),
+            (-3.5, -25.0,  25.0,   -0, 0, 0),
+            (-3.5, -25.0,  23.0,    0, 0, 0),
+            (-3.5, -7.0,   24.0,    0, 0, 0)]
+
+
 
         point = positions[self.start]
+
         pos_sp = self.control_drone_speed(self.current_pos, [float(point[0]),float(point[1]),float(point[2])])
 
         q = self.eular_to_quat([point[3], point[4], point[5]])
@@ -318,10 +370,25 @@ class TrajectoryGeneration(Node):
         ref_dist = np.sqrt((point[0] ** 2) + (point[1] ** 2) + (point[2] ** 2))
         curr_dist = np.sqrt((self.current_pos[0] ** 2) + (self.current_pos[1] ** 2) + + (self.current_pos[2] ** 2))
 
-        if (np.abs(ref_dist - curr_dist)) < 0.07:
+        x_diff = abs((point[0]) - (self.current_pos[0]))
+        y_diff = abs((point[1]) - (self.current_pos[1]))
+        z_diff = abs((point[2]) - (self.current_pos[2]))
+        print("Z: "+str(z_diff)+"    Y: "+str(y_diff))
+
+        z_diff = z_diff - self.t_dt
+
+        if  y_diff <= 0.08  and z_diff <= 0.08:
             self.start += 1
             if self.start == len(positions):
                 self.start = 0
+
+
+        # if (np.abs(ref_dist - curr_dist)) < 0.07:
+        #     self.start += 1
+        #     if self.start == len(positions):
+        #         self.start = 0
+
+        
 
     def manual_control(self):
         q = self.eular_to_quat([self.roll, self.pitch, self.yaw])
@@ -340,6 +407,8 @@ class TrajectoryGeneration(Node):
         elif self.mode == 3: self.star_traj()
         elif self.mode == 4: self.spiral_traj()
         elif self.mode == 5: self.wind_turbine()
+        elif self.mode == 6: self.narrow_window()
+        elif self.mode == 7: self.taj_tracking()
         elif self.mode == 0: self.manual_control()
         else: self.manual_control_slow()
 
@@ -351,6 +420,8 @@ def main(args=None):
     print('Mode 3: star_traj')
     print('Mode 4: spiral_traj')
     print('Mode 5: wind_turbine')
+    print('Mode 6: narrow_window')
+    print('Mode 7: taj_tracking')
 
     rclpy.init(args=args)
     trajectory_generation = TrajectoryGeneration()

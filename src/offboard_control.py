@@ -273,8 +273,8 @@ class OffboardControl(Node):
                 self.publish_gains()
                 self.publish_position_setpoint()
                 self.publish_attitude_setpoint()
-        else:
-            self.get_logger().info('Waiting for trajectory setpoint...')
+        # else:
+        #     self.get_logger().info('Waiting for trajectory setpoint...')
 
 
 def main(args=None) -> None:
