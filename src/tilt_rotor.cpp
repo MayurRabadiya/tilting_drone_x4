@@ -194,7 +194,7 @@ void ControllerNode::publishActuatorMotorsMsg(const Eigen::VectorXd &throttles, 
     actuator_servos_msg.timestamp = this->get_clock()->make_shared()->now().nanoseconds() / 1000;
     // actuator_servos_msg.control = {(float)alpha_angle[0], (float)alpha_angle[1], (float)alpha_angle[2], (float)alpha_angle[3], 0.0, 0.0, 0.0, 0.0};
     actuator_servos_msg.control = {0.1, 0.1, 0.1, 0.1, 0.0, 0.0, 0.0, 0.0};
-    actuator_servos_publisher_->publish(actuator_servos_msg);
+    //actuator_servos_publisher_->publish(actuator_servos_msg);
 
     // RCLCPP_INFO(this->get_logger(), "Servo: %f    %f    %f    %f ", alpha_angle[0], alpha_angle[1], alpha_angle[2], alpha_angle[3]);
     // RCLCPP_INFO(this->get_logger(), "Motor: %f    %f    %f    %f ", alpha_angle_W[0], alpha_angle_W[1], alpha_angle_W[2], alpha_angle_W[3]);
