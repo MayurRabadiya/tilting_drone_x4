@@ -26,6 +26,10 @@ add_executable(offboard_control src/offboard_control.cpp)
 ament_target_dependencies(offboard_control rclcpp px4_msgs)
 install(TARGETS offboard_control DESTINATION lib/${PROJECT_NAME})
 
+add_executable(tilt_rotor src/tilt_rotor.cpp)
+ament_target_dependencies(tilt_rotor rclcpp std_msgs geometry_msgs Eigen3 px4_msgs trajectory_msgs)
+install(TARGETS tilt_rotor DESTINATION lib/${PROJECT_NAME})
+
 # Install directories
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})

@@ -159,7 +159,7 @@ class TrajectoryGeneration(Node):
         y = self.y_pos
 
         roll = self.roll
-        pitch = np.degrees(np.arctan2(x, 13.0 * np.sin(self.theta))) 
+        pitch = np.degrees(np.arctan2(x, 13.0 * np.sin(self.theta)))
         yaw = self.yaw
 
         # Convert Euler angles to quaternion for orientation
@@ -200,7 +200,7 @@ class TrajectoryGeneration(Node):
         (0 <= np.degrees(self.theta) <= 20):
             roll = np.degrees(np.arctan2(x, y))
             pitch = 90.0
-            
+
         yaw = self.yaw
 
         q = self.eular_to_quat([roll, pitch, yaw])
@@ -224,7 +224,7 @@ class TrajectoryGeneration(Node):
         z = self.z_pos + self.spiral_h * self.theta
 
         roll  = np.degrees(np.arctan2(x, y))
-        pitch = 90.0
+        pitch = self.pitch
         yaw   = self.yaw
         q = self.eular_to_quat([roll, pitch, yaw])
         self.trajectory_publish([x,  y, z], orientation = q)
@@ -236,13 +236,23 @@ class TrajectoryGeneration(Node):
         y = self.radius * np.sin(self.theta) * np.cos(self.theta)
         z = self.z_pos
 
-        roll  = np.degrees(np.arctan2(x, y))
-        pitch = 90.0
+        roll  = self.roll
+        # roll  = np.degrees(np.arctan2(x, y))
+        pitch = 85.0
         yaw   = self.yaw
 
         q = self.eular_to_quat([roll, pitch, yaw])
         self.trajectory_publish([x,  y, z], orientation = q)
         self.theta += self.t_dt
+
+
+        # Publish reference Euler angles
+        ref_msg = Vector3()
+        ref_msg.x = float(roll)
+        ref_msg.y = float(pitch)
+        ref_msg.z = float(yaw)
+        self.reference_eular.publish(ref_msg)
+
 
     def control_drone_speed(self, current_position, target_position):
         direction_vector = np.array(target_position) - np.array(current_position)
@@ -329,7 +339,7 @@ class TrajectoryGeneration(Node):
                 self.start = 1
 
     def wind_turbine(self) :
-        # positions = [ 
+        # positions = [
         #     (-3.5, -7.0,   25.0,    0,   0, 0),
         #     (-3.5,  4.0,   14.5,    20,  0, 0),
         #     (-3.5,  7.5,   15.0,    20,  0, 0),
@@ -344,7 +354,7 @@ class TrajectoryGeneration(Node):
         #     (-3.5, -7.0,   24.0,    110, 0, 0)]
 
 
-        positions = [ 
+        positions = [
             (-3.5, -7.0,   25.0,    0,   0, 0),
             (-3.5,  4.0,   14.5,    0,  0, 0),
             (-3.5,  7.5,   15.0,    0,  0, 180),
@@ -388,7 +398,7 @@ class TrajectoryGeneration(Node):
         #     if self.start == len(positions):
         #         self.start = 0
 
-        
+
 
     def manual_control(self):
         q = self.eular_to_quat([self.roll, self.pitch, self.yaw])
