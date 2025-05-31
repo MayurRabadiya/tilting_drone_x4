@@ -3,6 +3,12 @@
 
 ![Alt text](media/x_drone_tilt_1.png)
 
+
+
+<a href="https://youtu.be/gHeF0P1Z8pc" target="_blank">
+  <img src="https://youtu.be/gHeF0P1Z8pc" alt="Watch video" width="600"/>
+</a>
+
 This repository contains a comprehensive simulation model of a tilting-arm quadcopter, complete with a control system based on the PX4-Autopilot SITL (Software in the Loop). The control system is integrated into the PX4-Autopilot firmware at the low-level. A high-level implementation of the same controller is available on the [feedback_control branch](https://github.com/MayurRabadiya/tilting_drone_x4/tree/feedback_control).
 
 ## Minimum Requirements
