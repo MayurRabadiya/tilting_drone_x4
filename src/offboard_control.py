@@ -12,6 +12,7 @@ from px4_msgs.msg import VehicleOdometry
 from px4_msgs.msg import VehicleControlMode
 from px4_msgs.msg import TiltingDroneX4AttitudeSetpoint
 from px4_msgs.msg import TiltingDroneX4Gains
+from px4_msgs.msg import TiltingDroneX4TestParams
 
 from geometry_msgs.msg import PoseStamped
 import numpy as np
@@ -50,6 +51,8 @@ class OffboardControl(Node):
             TiltingDroneX4AttitudeSetpoint, '/fmu/in/tilting_drone_x4_attitude_setpoint', qos_profile)
         self.tilting_drone_x4_gains_pub = self.create_publisher(
             TiltingDroneX4Gains, '/fmu/in/tilting_drone_x4_gains', qos_profile)
+        self.tilting_drone_x4_test_params_pub = self.create_publisher(
+            TiltingDroneX4TestParams, '/fmu/in/tilting_drone_x4_test_params', qos_profile)
         self.drone_local_pose_publisher = self. create_publisher(
             PoseStamped, '/drone_x4/local_pose', 10)
 
@@ -93,6 +96,13 @@ class OffboardControl(Node):
         self.declare_parameter('pos_i_gain_y', 0.0)
         self.declare_parameter('pos_i_gain_z', 0.0)
 
+        # Test Parameters
+        self.declare_parameter('test_param1', 0.0)
+        self.declare_parameter('test_param2', 0.0)
+        self.declare_parameter('test_param3', 0.0)
+        self.declare_parameter('test_param4', 0.0)
+
+
         # Create a timer to publish control commands
         self.offboard_timer = self.create_timer(0.02, self.offboard_callback)
         self.control_timer = self.create_timer(0.01, self.timer_callback)
@@ -127,6 +137,12 @@ class OffboardControl(Node):
         self.pos_i_gain_x = self.get_parameter('pos_i_gain_x').value
         self.pos_i_gain_y = self.get_parameter('pos_i_gain_y').value
         self.pos_i_gain_z = self.get_parameter('pos_i_gain_z').value
+
+        self.test_param_1 = self.get_parameter('test_param1').value
+        self.test_param_2 = self.get_parameter('test_param2').value
+        self.test_param_3 = self.get_parameter('test_param3').value
+        self.test_param_4 = self.get_parameter('test_param4').value
+        
 
     def mode_print(self):
         if self.mode == 0:
@@ -233,6 +249,13 @@ class OffboardControl(Node):
         self.orientation_sp[2] = pose_msgs.pose.orientation.y
         self.orientation_sp[3] = pose_msgs.pose.orientation.z
 
+    def publish_test_params(self):
+        """Publish Test Parameter values"""
+        param_msg = TiltingDroneX4TestParams()
+        param_msg.test_param = [self.test_param_1, self.test_param_2, self.test_param_3, self.test_param_4]
+        param_msg.timestamp = int(Clock().now().nanoseconds / 1000)
+        self.tilting_drone_x4_test_params_pub.publish(param_msg)
+
     def publish_gains(self):
         """Publish the controller gains."""
         gain_msg = TiltingDroneX4Gains()
@@ -273,6 +296,7 @@ class OffboardControl(Node):
                 self.publish_gains()
                 self.publish_position_setpoint()
                 self.publish_attitude_setpoint()
+                self.publish_test_params()
         # else:
         #     self.get_logger().info('Waiting for trajectory setpoint...')
 

@@ -22,13 +22,13 @@ find_package(builtin_interfaces REQUIRED)
 # Specify additional locations of header files
 include_directories(include ${EIGEN3_INCLUDE_DIR})  # Use EIGEN3_INCLUDE_DIR instead of EIGEN3_DIR
 
-add_executable(offboard_control src/offboard_control.cpp)
-ament_target_dependencies(offboard_control rclcpp px4_msgs)
-install(TARGETS offboard_control DESTINATION lib/${PROJECT_NAME})
+#add_executable(offboard_control src/offboard_control.cpp)
+#ament_target_dependencies(offboard_control rclcpp px4_msgs)
+#install(TARGETS offboard_control DESTINATION lib/${PROJECT_NAME})
 
-add_executable(tilt_rotor src/tilt_rotor.cpp)
-ament_target_dependencies(tilt_rotor rclcpp std_msgs geometry_msgs Eigen3 px4_msgs trajectory_msgs)
-install(TARGETS tilt_rotor DESTINATION lib/${PROJECT_NAME})
+#add_executable(tilt_rotor src/tilt_rotor.cpp)
+#ament_target_dependencies(tilt_rotor rclcpp std_msgs geometry_msgs Eigen3 px4_msgs trajectory_msgs)
+#install(TARGETS tilt_rotor DESTINATION lib/${PROJECT_NAME})
 
 # Install directories
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
