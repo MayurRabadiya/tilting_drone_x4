@@ -36,9 +36,9 @@ add_executable(circle_trajectory_node src/TrajectoryPublishers/circle_trajectory
 ament_target_dependencies(circle_trajectory_node rclcpp geometry_msgs)
 install(TARGETS circle_trajectory_node DESTINATION lib/${PROJECT_NAME})
 
-add_executable(offboard_control src/offboard_control.cpp)
-ament_target_dependencies(offboard_control rclcpp px4_msgs)
-install(TARGETS offboard_control DESTINATION lib/${PROJECT_NAME})
+add_executable(offboard_control_cpp src/offboard_control.cpp)
+ament_target_dependencies(offboard_control_cpp rclcpp px4_msgs)
+install(TARGETS offboard_control_cpp DESTINATION lib/${PROJECT_NAME})
 
 # Install directories
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
@@ -60,7 +60,7 @@ endif()
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
 
-install(PROGRAMS src/offboard_control.py DESTINATION lib/${PROJECT_NAME})
-install(PROGRAMS src/visualizer.py DESTINATION lib/${PROJECT_NAME})
+# install(PROGRAMS src/offboard_control.py DESTINATION lib/${PROJECT_NAME})
+# install(PROGRAMS src/visualizer.py DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

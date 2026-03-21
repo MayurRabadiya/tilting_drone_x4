@@ -54,11 +54,17 @@ public:
         angular_velocity_m_ = angular_velocity_m;
     }
 
+    #include <cmath>
+
     void setDesiredPose(const Eigen::Vector3d &position_d, const Eigen::Vector3d &orientation_d)
     {
         position_d_ = position_d;
-        R_d = eulerAnglesToRotationMatrix(orientation_d(0), orientation_d(1), orientation_d(2)); //(roll, pitch, yaw)
-        Q_d = eulerAnglesToQuaternion(orientation_d(0), orientation_d(1), orientation_d(2));     //(roll, pitch, yaw)
+
+        // Convert degrees → radians
+        Eigen::Vector3d orientation_rad = orientation_d.array() * M_PI / 180.0;
+
+        R_d = eulerAnglesToRotationMatrix(orientation_rad(0),orientation_rad(1),orientation_rad(2)); // (roll, pitch, yaw)
+        Q_d = eulerAnglesToQuaternion(orientation_rad(0),orientation_rad(1),orientation_rad(2)); // (roll, pitch, yaw)
     }
 
     // Not Used yet

@@ -9,6 +9,8 @@ ControllerNode::ControllerNode()
     // Defining the compatible ROS 2 predefined QoS for PX4 topics
     rmw_qos_profile_t qos_profile = rmw_qos_profile_sensor_data;
     auto qos = rclcpp::QoS(rclcpp::QoSInitialization(qos_profile.history, 5), qos_profile);
+    auto qos1 = rclcpp::QoS(rclcpp::KeepLast(1)).best_effort();
+
 
     // Subscribers
     vehicle_odometry_sub_ = this->create_subscription<px4_msgs::msg::VehicleOdometry>("fmu/out/vehicle_odometry", qos, std::bind(&ControllerNode::vehicle_odometryCallback, this, _1));
@@ -18,10 +20,10 @@ ControllerNode::ControllerNode()
     actuator_servos_sub_ = this->create_subscription<px4_msgs::msg::ActuatorServos>("/fmu/out/actuator_servos", qos, std::bind(&ControllerNode::actuator_servosCallback, this, _1));
 
     // Publishers
-    actuator_motors_publisher_ = this->create_publisher<px4_msgs::msg::ActuatorMotors>("/fmu/in/actuator_motors", 10);
-    actuator_servos_publisher_ = this->create_publisher<px4_msgs::msg::ActuatorServos>("/fmu/in/actuator_servos", 10);
-    offboard_control_mode_publisher_ = this->create_publisher<px4_msgs::msg::OffboardControlMode>("/fmu/in/offboard_control_mode", 10);
-    vehicle_command_publisher_ = this->create_publisher<px4_msgs::msg::VehicleCommand>("/fmu/in/vehicle_command", 10);
+    actuator_motors_publisher_ = this->create_publisher<px4_msgs::msg::ActuatorMotors>("/fmu/in/actuator_motors", qos1);
+    actuator_servos_publisher_ = this->create_publisher<px4_msgs::msg::ActuatorServos>("/fmu/in/actuator_servos", qos1);
+    offboard_control_mode_publisher_ = this->create_publisher<px4_msgs::msg::OffboardControlMode>("/fmu/in/offboard_control_mode", qos1);
+    vehicle_command_publisher_ = this->create_publisher<px4_msgs::msg::VehicleCommand>("/fmu/in/vehicle_command", qos1);
 
     thrust_publisher_ = this->create_publisher<std_msgs::msg::Float32MultiArray>("/drone_x4/thrust", 10);
     torque_publisher_ = this->create_publisher<std_msgs::msg::Float32MultiArray>("/drone_x4/torque", 10);
@@ -31,12 +33,13 @@ ControllerNode::ControllerNode()
     callback_handle_ = this->add_on_set_parameters_callback( std::bind(&ControllerNode::parametersCallback, this, std::placeholders::_1));
 
     // Timers
-    std::chrono::duration<double> offboard_period(0.33);
-    std::chrono::duration<double> controller_period(0.01);
+    std::chrono::duration<double> offboard_period(0.02);
+    // std::chrono::milliseconds controller_period(25);   // 200 Hz
+    std::chrono::duration<double> controller_period(0.0025);
     offboardTimer = this->create_wall_timer(offboard_period, [=]()
                                             {publishOffboardControlModeMsg();
-        publish_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 6);
-        arm(); });
+                                             publish_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 6);
+                                             arm(); });
     controllerTimer = this->create_wall_timer(controller_period, [=]()
                                               { updateControllerOutput(); });
 }
@@ -53,6 +56,21 @@ rcl_interfaces::msg::SetParametersResult ControllerNode::parametersCallback(cons
         if (param.get_name() == "control_mode")
         {
             control_mode_ = param.as_int();
+        }
+        if (param.get_name() == "control_gains.eular_roll")
+        {
+            eular_des_ << param.as_double(),
+                        0.0,
+                        0.0;
+            // RCLCPP_INFO(this->get_logger(), "Parameter %s has changed to [%s]", param.get_name().c_str(), param.value_to_string().c_str());
+        }
+        if (param.get_name() == "control_gains.position_x")
+        {
+            position_des_ << param.as_double(), 0.0, 0.0;      
+        }
+        if (param.get_name() == "control_gains.position_z")
+        {
+            position_des_ << 0.0, 0.0, param.as_double();      
         }
     }
     return result;
@@ -89,21 +107,21 @@ void ControllerNode::loadParams()
     control_mode_ = this->get_parameter("control_mode").as_int();
 
     // Controller gains
-    this->declare_parameter("control_gains.K_p_x", 0.0);
-    this->declare_parameter("control_gains.K_p_y", 0.0);
-    this->declare_parameter("control_gains.K_p_z", 0.0);
+    this->declare_parameter("control_gains.K_p_x", 1.95);
+    this->declare_parameter("control_gains.K_p_y", 1.95);
+    this->declare_parameter("control_gains.K_p_z", 1.95);
 
-    this->declare_parameter("control_gains.K_v_x", 0.0);
-    this->declare_parameter("control_gains.K_v_y", 0.0);
-    this->declare_parameter("control_gains.K_v_z", 0.0);
+    this->declare_parameter("control_gains.K_v_x", 3.5);
+    this->declare_parameter("control_gains.K_v_y", 3.5);
+    this->declare_parameter("control_gains.K_v_z", 3.2);
 
-    this->declare_parameter("control_gains.K_R_x", 0.0);
-    this->declare_parameter("control_gains.K_R_y", 0.0);
-    this->declare_parameter("control_gains.K_R_z", 0.0);
+    this->declare_parameter("control_gains.K_R_x", 90.0);
+    this->declare_parameter("control_gains.K_R_y", 90.0);
+    this->declare_parameter("control_gains.K_R_z", 5.0);
     
-    this->declare_parameter("control_gains.K_w_x", 0.0);
-    this->declare_parameter("control_gains.K_w_y", 0.0);
-    this->declare_parameter("control_gains.K_w_z", 0.0);
+    this->declare_parameter("control_gains.K_w_x", 30.0);
+    this->declare_parameter("control_gains.K_w_y", 30.0);
+    this->declare_parameter("control_gains.K_w_z", 5.5);
 
     position_gain_ << this->get_parameter("control_gains.K_p_x").as_double(),
         this->get_parameter("control_gains.K_p_y").as_double(),
@@ -153,12 +171,12 @@ void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorX
 {
     Eigen::MatrixXd mixing_matrix(8, 6);
 
-    const double p = 0.70710678118; // sqrt(2)/2
-    const double l = 0.18560;       // rotor arm length from center of body
+    // const double p = 0.70710678118; // sqrt(2)/2
+    // const double l = 0.18560;       // rotor arm length from center of body
 
-    const double kf = 8.54858e-06;  // drage constant
-    const double kt = 0.016;        // force constant
-    const double k = kt * kf;
+    // const double kf = 8.54858e-06;  // drage constant
+    // const double kt = 0.016;        // force constant
+    // const double k = kt * kf;
 
     // mixing_matrix << -1/(4*p),     -1/(4*p),     0.0,    0.0,          0.0,         -l*l/(4*l*(k*k+l*l)),
     //                  -k/(4*l*p),   -k/(4*l*p),   1/4,   -1/(4*l*p),   -1/(4*l*p),   -k*k/(4*k*(k*k+l*l)),
@@ -205,15 +223,15 @@ void ControllerNode::px4InverseSITL(Eigen::VectorXd *alpha_angle, Eigen::VectorX
     *alpha_angle << alpha1, alpha2, alpha3, alpha4;
     *alpha_angle /= 6.2657320147; // PX4 only accepts servo motor input in range -1 to 1
 
-    RCLCPP_INFO(this->get_logger(), "e_p    : %f    %f    %f", controller_._e_p[0], controller_._e_p[1], controller_._e_p[2]);
-    RCLCPP_INFO(this->get_logger(), "r_p    : %f    %f    %f", controller_._r_p[0], controller_._r_p[1], controller_._r_p[2]);
-    RCLCPP_INFO(this->get_logger(), "r_p_g  : %f    %f    %f", controller_._r_p_g[0], controller_._r_p_g[1], controller_._r_p_g[2]);
-    RCLCPP_INFO(this->get_logger(), "e_R    : %f    %f    %f", controller_._e_R[0], controller_._e_R[1], controller_._e_R[2]);
-    RCLCPP_INFO(this->get_logger(), "r_R    : %f    %f    %f", controller_._r_R[0], controller_._r_R[1], controller_._r_R[2]);
-    RCLCPP_INFO(this->get_logger(), "e_R_matrix  :  \n%s", matrix3dToString(controller_._e_R_matrix).c_str());
+    // RCLCPP_INFO(this->get_logger(), "e_p    : %f    %f    %f", controller_._e_p[0], controller_._e_p[1], controller_._e_p[2]);
+    // RCLCPP_INFO(this->get_logger(), "r_p    : %f    %f    %f", controller_._r_p[0], controller_._r_p[1], controller_._r_p[2]);
+    // RCLCPP_INFO(this->get_logger(), "r_p_g  : %f    %f    %f", controller_._r_p_g[0], controller_._r_p_g[1], controller_._r_p_g[2]);
+    // RCLCPP_INFO(this->get_logger(), "e_R    : %f    %f    %f", controller_._e_R[0], controller_._e_R[1], controller_._e_R[2]);
+    // RCLCPP_INFO(this->get_logger(), "r_R    : %f    %f    %f", controller_._r_R[0], controller_._r_R[1], controller_._r_R[2]);
+    // RCLCPP_INFO(this->get_logger(), "e_R_matrix  :  \n%s", matrix3dToString(controller_._e_R_matrix).c_str());
 
-    RCLCPP_INFO(this->get_logger(), "Thrust : %f    %f    %f", t_T[0], t_T[1], t_T[2]);
-    RCLCPP_INFO(this->get_logger(), "Torque : %f    %f    %f", t_T[3], t_T[4], t_T[5]);
+    // RCLCPP_INFO(this->get_logger(), "Thrust : %f    %f    %f", t_T[0], t_T[1], t_T[2]);
+    // RCLCPP_INFO(this->get_logger(), "Torque : %f    %f    %f", t_T[3], t_T[4], t_T[5]);
 
 
 
@@ -246,14 +264,14 @@ std::string ControllerNode::matrix3dToString(const Eigen::Matrix3d &matrix)
 void ControllerNode::arm()
 {
     publish_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 1);
-    RCLCPP_INFO(this->get_logger(), "Arm command send");
+    // RCLCPP_INFO(this->get_logger(), "Arm command send");
 }
 
 void ControllerNode::disarm()
 {
     publish_vehicle_command(px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0);
 
-    RCLCPP_INFO(this->get_logger(), "Disarm command send");
+    // RCLCPP_INFO(this->get_logger(), "Disarm command send");
 }
 
 void ControllerNode::publish_vehicle_command(uint16_t command, float param1, float param2)
@@ -283,7 +301,7 @@ void ControllerNode::publishOffboardControlModeMsg()
     offboard_msg.direct_actuator = true;
     offboard_msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
     offboard_control_mode_publisher_->publish(offboard_msg);
-    RCLCPP_INFO_ONCE(get_logger(), "Offboard enabled");
+    // RCLCPP_INFO_ONCE(get_logger(), "Offboard enabled");
 }
 
 void ControllerNode::commandPoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr pose_msg)
@@ -292,14 +310,14 @@ void ControllerNode::commandPoseCallback(const geometry_msgs::msg::PoseStamped::
     Eigen::Vector3d position;
     Eigen::Quaterniond orientation;
     eigenTrajectoryPointFromPoseMsg(pose_msg, position, orientation);
-    RCLCPP_INFO_ONCE(get_logger(), "Controller got first command message.");
+    // RCLCPP_INFO_ONCE(get_logger(), "Controller got first command message.");
     // controller_.setTrajectoryPoint(position, orientation); // Send the command to controller_ obj
 }
 
 void ControllerNode::vehicle_odometryCallback(const px4_msgs::msg::VehicleOdometry::SharedPtr odom_msg)
 {
     //  Debug message
-    RCLCPP_INFO_ONCE(get_logger(), "Controller got first odometry message.");
+    // RCLCPP_INFO_ONCE(get_logger(), "Controller got first odometry message.");
 
     Eigen::Vector3d position;
     Eigen::Vector3d velocity;
@@ -314,7 +332,7 @@ void ControllerNode::vehicle_odometryCallback(const px4_msgs::msg::VehicleOdomet
 void ControllerNode::actuator_motorsCallback(const px4_msgs::msg::ActuatorMotors::SharedPtr motor_msg)
 {
     //  Debug message
-    RCLCPP_INFO_ONCE(get_logger(), "Controller got first actuator motor message.");
+    // RCLCPP_INFO_ONCE(get_logger(), "Controller got first actuator motor message.");
     Eigen::Vector4d motor_thrust;
     motor_thrust << motor_msg->control[0], motor_msg->control[1], motor_msg->control[2], motor_msg->control[3];
     _setActuatorThrust(motor_thrust);
@@ -324,7 +342,7 @@ void ControllerNode::actuator_motorsCallback(const px4_msgs::msg::ActuatorMotors
 void ControllerNode::actuator_servosCallback(const px4_msgs::msg::ActuatorServos::SharedPtr servo_msg)
 {
     //  Debug message
-    RCLCPP_INFO_ONCE(get_logger(), "Controller got first actuator servo message.");
+    // RCLCPP_INFO_ONCE(get_logger(), "Controller got first actuator servo message.");
     Eigen::Vector4d alpha_angle_;
     alpha_angle_ << servo_msg->control[0], servo_msg->control[1], servo_msg->control[2], servo_msg->control[3];
     _setArmAngle(alpha_angle_);
@@ -357,8 +375,8 @@ void ControllerNode::publishActuatorMotorsMsg(const Eigen::VectorXd &throttles, 
 
     actuator_servos_publisher_->publish(actuator_servos_msg);
 
-    RCLCPP_INFO(this->get_logger(), "Servo : %f    %f    %f    %f ", alpha_angle[0], alpha_angle[1], alpha_angle[2], alpha_angle[3]);
-    RCLCPP_INFO(this->get_logger(), "Motor : %f    %f    %f    %f \n", throttles[0], throttles[1], throttles[2], throttles[3]);
+    // RCLCPP_INFO(this->get_logger(), "Servo : %f    %f    %f    %f ", alpha_angle[0], alpha_angle[1], alpha_angle[2], alpha_angle[3]);
+    // RCLCPP_INFO(this->get_logger(), "Motor : %f    %f    %f    %f \n", throttles[0], throttles[1], throttles[2], throttles[3]);
 }
 
 void ControllerNode::updateControllerOutput()
@@ -379,6 +397,7 @@ void ControllerNode::updateControllerOutput()
 
         publishActuatorMotorsMsg(throttles, alpha_angle);
     }
+    controller_.setDesiredPose(position_des_, eular_des_);
 }
 
 int main(int argc, char **argv)
