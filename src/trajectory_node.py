@@ -6,12 +6,15 @@ from rclpy.clock import Clock
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Vector3
+from std_msgs.msg import Int32
 
 from px4_msgs.msg import VehicleOdometry
+from px4_msgs.msg import TiltingDroneX4JoyStick 
 
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 import math
+import socket  
 
 
 class TrajectoryGeneration(Node):
@@ -36,6 +39,31 @@ class TrajectoryGeneration(Node):
         self.drone_pose_publisher = self. create_publisher(PoseStamped, '/drone_x4/pose', 10)
         self.reference_eular = self.create_publisher(Vector3, '/drone_x4/ref_rpy', 10)
         self.current_eular = self.create_publisher(Vector3, '/drone_x4/cur_rpy', 10)
+        self.start_up_pub = self.create_publisher(Int32, '/drone_x4/start_up', 10)
+
+        self.joy_pub = self.create_publisher(  
+            TiltingDroneX4JoyStick,
+            '/fmu/in/tilting_drone_x4_joy_stick',
+            10
+        )
+
+        # ✅ UDP SOCKET ADDED
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind(("0.0.0.0", 9999))
+        self.sock.setblocking(False)
+
+        print("✅ Joystick UDP receiver started on port 9999")
+
+        # Joystick values
+        self.joystick_x = 0.0
+        self.joystick_y = 0.0
+        self.joystick_z = 0.0
+
+        self.yaw = 0.0
+        self.roll = 0.0
+        self.pitch = 0.0
+
+        self.stat_up = 0
 
         # Initialize variables
         self.theta = 0.0
@@ -97,9 +125,9 @@ class TrajectoryGeneration(Node):
         """Callback function to handle parameter changes."""
         self.mode   = self.get_parameter('mode').value
 
-        self.roll  = self.get_parameter('roll').value
-        self.pitch = self.get_parameter('pitch').value
-        self.yaw   = self.get_parameter('yaw').value
+        # self.roll  = self.get_parameter('roll').value
+        # self.pitch = self.get_parameter('pitch').value
+        # self.yaw   = self.get_parameter('yaw').value
 
         self.x_pos = self.get_parameter('x_pos').value
         self.y_pos = self.get_parameter('y_pos').value
@@ -398,11 +426,52 @@ class TrajectoryGeneration(Node):
         #     if self.start == len(positions):
         #         self.start = 0
 
+    def read_udp_joystick(self):
+        try:
+            while True:
+                data, _ = self.sock.recvfrom(1024)
+                msg = data.decode().strip()
+                values = list(map(float, msg.split(',')))
+
+                if len(values) >= 3:
+                    self.joystick_x = values[1]
+                    self.joystick_y = values[0]
+                    self.joystick_z = values[2]
+
+                    self.yaw = values[3]
+                    self.roll = values[4]
+                    self.pitch = values[5]
+
+                    self.stat_up = values[6]
+
+
+
+        except BlockingIOError:
+            pass
+
+        # Print to confirm reception
+        print(f"\rJOY: {self.joystick_x:.2f}, {self.joystick_y:.2f}, {self.joystick_z:.2f}, {self.roll:.2f}, {self.pitch:.2f}, {self.yaw:.2f} , {self.stat_up}" , end="")
+
+    # ✅ JOYSTICK PUBLISH
+    def joystick_publish(self):
+        msg = TiltingDroneX4JoyStick()
+        msg.joystick = [
+            float(self.joystick_x),
+            float(self.joystick_y),
+            float(self.joystick_z)
+        ]
+        self.joy_pub.publish(msg)
+
+    def startup_publish(self):
+        msg = Int32()
+        msg.data = int(self.stat_up)
+        self.start_up_pub.publish(msg)
 
 
     def manual_control(self):
         q = self.eular_to_quat([self.roll, self.pitch, self.yaw])
         self.trajectory_publish([self.x_pos, self.y_pos, self.z_pos], orientation = q)
+        self.joystick_publish()  
 
     def manual_control_slow(self):
         q = self.eular_to_quat([self.roll, self.pitch, self.yaw])
@@ -411,7 +480,9 @@ class TrajectoryGeneration(Node):
 
     def timer_callback(self) -> None:
         """Callback function for the timer."""
+        self.read_udp_joystick()     # ✅ ADDED
         self.parameter_callback()
+        self.startup_publish()
         if self.mode   == 1: self.lemniscate_traj()
         elif self.mode == 2: self.circular_traj()
         elif self.mode == 3: self.star_traj()

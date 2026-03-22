@@ -71,7 +71,7 @@ def generate_launch_description():
         world_args,
         run_px4_sitl,
         visualizer,
-        rviz,
+        # rviz,
         offboard
     ])
 

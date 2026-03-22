@@ -15,6 +15,8 @@ from px4_msgs.msg import TiltingDroneX4Gains
 from px4_msgs.msg import TiltingDroneX4TestParams
 
 from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Int32
+
 import numpy as np
 
 class OffboardControl(Node):
@@ -37,6 +39,10 @@ class OffboardControl(Node):
             VehicleStatus, '/fmu/out/vehicle_status', self.vehicle_status_callback, qos_profile)
         self.trajectory_pose_subscriber = self.create_subscription(
             PoseStamped, '/drone_x4/pose', self.trajectory_pose_callback, 10)
+        
+        self.start_up_sub = self.create_subscription(
+            Int32, '/drone_x4/start_up', self.start_up_callback, 10)
+        
 
         # Create publishers
         self.offboard_control_mode_publisher = self.create_publisher(
@@ -61,6 +67,8 @@ class OffboardControl(Node):
         self.arming_state = VehicleStatus.ARMING_STATE_DISARMED
         self.vehicle_status = VehicleStatus()
         self.offboard_setpoint_counter = 0
+
+        self.start_up = 0
 
         self.pos_sp = np.array([0.0, 0.0, 0.0])
         self.orientation_sp = np.array([1.0, 0.0, 0.0, 0.0])
@@ -110,7 +118,14 @@ class OffboardControl(Node):
     def offboard_callback(self):
         self.publish_offboard_control_heartbeat_signal()
         self.engage_offboard_mode()
-        self.arm()
+        if self.start_up == 1:
+            self.arm()
+        else:
+            self.disarm()
+
+    def start_up_callback(self, msg):
+        self.start_up = msg.data
+
 
     def parameter_callback(self):
         """Callback function to handle parameter changes."""
