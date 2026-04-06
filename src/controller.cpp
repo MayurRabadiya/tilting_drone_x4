@@ -17,9 +17,10 @@ void controller::calculateControllerOutput(Eigen::VectorXd *controller_torque_th
         Eigen::Vector3d thrust = R_m.transpose() * r_p;
 
         
-        // Compute rotational errors.
-
         
+
+
+        // Compute rotational errors.        
         const Eigen::Matrix3d e_R_matrix = 0.5 * (R_d.transpose() * R_m - R_m.transpose() * R_d);
         Eigen::Vector3d e_R;
         e_R << e_R_matrix(2, 1), e_R_matrix(0, 2), e_R_matrix(1, 0);
